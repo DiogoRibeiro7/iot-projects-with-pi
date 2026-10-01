@@ -71,7 +71,7 @@ Observations are stored in `data/weather.db` by default.
 
 - **gpio/DHT library unavailable:** install the `dht` extra on the Raspberry Pi.
 - **unknown board pin:** use a valid CircuitPython board pin such as `D4`.
-- **intermittent DHT read failures:** DHT devices can transiently fail; retry on the next sample.
+- **intermittent DHT read failures:** DHT devices can transiently fail; each sample is retried up to three times with a two-second delay before the run stops.
 - **permission errors:** verify the process has access to the required GPIO devices.
 
 ## Safety
