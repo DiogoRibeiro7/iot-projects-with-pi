@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "iot-projects-with-pi"
+version = "0.1.0"
+description = "Reusable Raspberry Pi IoT building blocks and reference projects."
+authors = ["Diogo Ribeiro"]
+readme = "README.md"
+packages = [{ include = "iot_pi", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.18.0"
+pre-commit = "^4.3.0"
+pytest = "^8.4.0"
+pytest-cov = "^7.0.0"
+ruff = "^0.13.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ANN"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["ANN"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["iot_pi"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config --cov=iot_pi --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["iot_pi"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 90
