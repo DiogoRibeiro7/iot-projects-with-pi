@@ -18,6 +18,7 @@ dht = ["adafruit-circuitpython-dht", "adafruit-blinka"]
 
 [tool.poetry.scripts]
 iot-weather = "iot_pi.weather.cli:main"
+iot-home = "iot_pi.home.cli:main"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.18.0"
