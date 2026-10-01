@@ -4,6 +4,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 import json
 import logging
+from math import isfinite
 import time
 
 from iot_pi.hardware.interfaces import TemperatureHumiditySensor
@@ -28,8 +29,13 @@ class WeatherStation:
         logger: logging.Logger | None = None,
     ) -> None:
         """Create a weather-station service."""
-        if sample_interval_seconds <= 0:
-            raise ValueError("sample_interval_seconds must be greater than zero")
+        if not isfinite(sample_interval_seconds) or sample_interval_seconds <= 0:
+            raise ValueError(
+                "sample_interval_seconds must be a positive finite number"
+            )
+
+        if not isinstance(sensor, TemperatureHumiditySensor):
+            raise TypeError("sensor does not satisfy TemperatureHumiditySensor")
 
         self._sensor = sensor
         self._store = store
@@ -39,9 +45,13 @@ class WeatherStation:
         self._logger = logger or logging.getLogger("iot_pi.weather")
 
     def open(self) -> None:
-        """Initialize sensor and storage resources."""
+        """Initialize sensor and storage resources safely."""
         self._sensor.open()
-        self._store.open()
+        try:
+            self._store.open()
+        except Exception:
+            self._sensor.close()
+            raise
 
     def close(self) -> None:
         """Release sensor and storage resources."""
