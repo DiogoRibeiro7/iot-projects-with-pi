@@ -9,16 +9,17 @@ from typing import Any
 from iot_pi.hardware.errors import HardwareUnavailableError
 
 
-def _load_gpiozero() -> tuple[type[Any], type[Any]]:
+def _load_gpiozero() -> tuple[type[Any], type[Any], type[Exception]]:
     """Load gpiozero classes only when real hardware is requested."""
     try:
         from gpiozero import Button, OutputDevice
+        from gpiozero.exc import BadPinFactory
     except (ImportError, OSError) as exc:
         raise HardwareUnavailableError(
             "gpiozero is unavailable; install the 'hardware' extra on a Raspberry Pi"
         ) from exc
 
-    return Button, OutputDevice
+    return Button, OutputDevice, BadPinFactory
 
 
 class GpioZeroDigitalInput:
@@ -34,8 +35,14 @@ class GpioZeroDigitalInput:
         """Allocate the GPIO input device."""
         if self._device is not None:
             return
-        button_type, _ = _load_gpiozero()
-        self._device = button_type(self._pin, pull_up=self._pull_up)
+
+        button_type, _, bad_pin_factory = _load_gpiozero()
+        try:
+            self._device = button_type(self._pin, pull_up=self._pull_up)
+        except bad_pin_factory as exc:
+            raise HardwareUnavailableError(
+                "gpiozero is installed but no usable Raspberry Pi pin factory is available"
+            ) from exc
 
     def close(self) -> None:
         """Release the GPIO input device."""
@@ -70,12 +77,18 @@ class GpioZeroRelay:
         """Allocate the GPIO output device."""
         if self._device is not None:
             return
-        _, output_type = _load_gpiozero()
-        self._device = output_type(
-            self._pin,
-            active_high=self._active_high,
-            initial_value=self._initial_state,
-        )
+
+        _, output_type, bad_pin_factory = _load_gpiozero()
+        try:
+            self._device = output_type(
+                self._pin,
+                active_high=self._active_high,
+                initial_value=self._initial_state,
+            )
+        except bad_pin_factory as exc:
+            raise HardwareUnavailableError(
+                "gpiozero is installed but no usable Raspberry Pi pin factory is available"
+            ) from exc
 
     def close(self) -> None:
         """Switch the relay off and release GPIO resources."""
