@@ -8,6 +8,10 @@ packages = [{ include = "iot_pi", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.12"
+gpiozero = { version = "^2.0.1", optional = true }
+
+[tool.poetry.extras]
+hardware = ["gpiozero"]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.18.0"
