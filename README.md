@@ -1,49 +1,92 @@
 # IoT Projects with Raspberry Pi
 
-## Overview
-This repository contains a collection of IoT (Internet of Things) projects developed using Raspberry Pi. The projects demonstrate various applications of Raspberry Pi for real-time data collection, control, and monitoring using sensors, actuators, and communication protocols.
+A collection of reproducible IoT projects and reusable Python components for
+Raspberry Pi systems.
 
-## Table of Contents
-- [Overview](#overview)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Projects](#projects)
-- [Contributing](#contributing)
-- [License](#license)
+The repository is being developed as an engineering lab rather than a set of
+isolated scripts. Shared concerns such as configuration, hardware access,
+messaging, persistence, and observability live in the `iot_pi` package, while
+complete applications live under `projects/`.
+
+## Repository layout
+
+```text
+iot-projects-with-pi/
+├── src/iot_pi/       # Reusable typed Python components
+├── projects/         # Complete reference IoT applications
+├── examples/         # Focused runnable examples
+├── tests/            # Hardware-independent automated tests
+├── docs/             # Architecture and development documentation
+└── pyproject.toml    # Poetry and quality-tool configuration
+```
 
 ## Requirements
-- Raspberry Pi (any version with GPIO support)
-- Raspbian OS
-- Python 3
-- Various sensors and actuators depending on the project (e.g., temperature sensor, humidity sensor, camera module, etc.)
-- Access to a Wi-Fi network
 
-## Installation
-1. Clone this repository:
-    ```bash
-    git clone https://github.com/your-username/iot-projects-raspberry-pi.git
-    ```
-2. Navigate to the project directory and install dependencies:
-    ```bash
-    cd iot-projects-raspberry-pi
-    pip install -r requirements.txt
-    ```
-3. Follow the instructions in each project folder for specific setup and execution.
+- Python 3.12
+- Poetry
+- Raspberry Pi hardware only when running hardware-specific adapters
+
+The core package and automated tests are designed to work without GPIO hardware.
+
+## Development setup
+
+Clone the repository:
+
+```bash
+git clone https://github.com/DiogoRibeiro7/iot-projects-with-pi.git
+cd iot-projects-with-pi
+```
+
+Install dependencies:
+
+```bash
+poetry install
+```
+
+Run the quality checks:
+
+```bash
+poetry run ruff check .
+poetry run ruff format --check .
+poetry run mypy src
+poetry run pytest
+```
+
+Install the local pre-commit hooks:
+
+```bash
+poetry run pre-commit install
+```
 
 ## Projects
-1. **Project 1: Home Automation System**
-   - Monitor and control lights, temperature, and humidity.
 
-2. **Project 2: Weather Station**
-   - Collect and display real-time weather data using a Raspberry Pi and sensors.
+The roadmap starts with two complete reference applications:
 
-3. **Project 3: Security Camera System**
-   - Use a Raspberry Pi camera module for video surveillance and motion detection.
+1. **Weather station** — periodic environmental measurements, validation,
+   persistence, telemetry, and simulation support.
+2. **Home automation** — sensor-driven rules, actuator control, manual override,
+   and safe failure behaviour.
+
+Additional projects should reuse the common package rather than duplicate
+infrastructure code.
+
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for the repository boundaries
+and design principles.
+
+## Roadmap
+
+Development is tracked through GitHub issues. The roadmap covers repository
+foundations, hardware abstractions, reference projects, MQTT, persistence,
+observability, testing, deployment, and documentation.
 
 ## Contributing
-Feel free to contribute to this project by submitting a pull request or suggesting new IoT projects! Please check the [TODO](./TODO.md) for upcoming features and tasks.
+
+Contributions should be developed on a branch and submitted through a pull
+request. New code should be typed, documented, and covered by tests where
+appropriate.
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
-
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
