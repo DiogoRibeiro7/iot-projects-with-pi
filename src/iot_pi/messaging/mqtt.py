@@ -1,0 +1,150 @@
+"""Paho MQTT adapter with bounded reconnect backoff."""
+
+from __future__ import annotations
+
+import time
+from typing import Any, Callable
+
+from iot_pi.hardware.errors import HardwareUnavailableError
+
+
+class PahoMqttPublisher:
+    """MQTT publisher backed by paho-mqtt."""
+
+    def __init__(
+        self,
+        host: str,
+        *,
+        port: int = 1883,
+        client_id: str = "",
+        connect_retries: int = 3,
+        backoff_seconds: float = 1.0,
+    ) -> None:
+        """Create an unopened MQTT publisher."""
+        if connect_retries <= 0:
+            raise ValueError("connect_retries must be greater than zero")
+        if backoff_seconds <= 0:
+            raise ValueError("backoff_seconds must be greater than zero")
+
+        self._host = host
+        self._port = port
+        self._client_id = client_id
+        self._connect_retries = connect_retries
+        self._backoff_seconds = backoff_seconds
+        self._client: Any | None = None
+
+    def open(self) -> None:
+        """Connect to the broker with bounded exponential backoff."""
+        if self._client is not None:
+            return
+
+        try:
+            import paho.mqtt.client as mqtt
+        except ImportError as exc:
+            raise HardwareUnavailableError(
+                "paho-mqtt is unavailable; install the 'mqtt' extra"
+            ) from exc
+
+        last_error: Exception | None = None
+        for attempt in range(self._connect_retries):
+            client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=self._client_id)
+            try:
+                client.connect(self._host, self._port)
+                client.loop_start()
+            except OSError as exc:
+                last_error = exc
+                if attempt < self._connect_retries - 1:
+                    time.sleep(self._backoff_seconds * (2**attempt))
+                continue
+
+            self._client = client
+            return
+
+        raise HardwareUnavailableError(
+            f"unable to connect to MQTT broker after {self._connect_retries} attempts"
+        ) from last_error
+
+    def close(self) -> None:
+        """Stop network processing and disconnect."""
+        if self._client is not None:
+            self._client.loop_stop()
+            self._client.disconnect()
+            self._client = None
+
+    def publish(
+        self,
+        topic: str,
+        payload: str,
+        *,
+        qos: int = 1,
+        retain: bool = False,
+    ) -> None:
+        """Publish one MQTT message."""
+        if self._client is None:
+            raise HardwareUnavailableError("MQTT publisher is not open")
+        if qos not in {0, 1, 2}:
+            raise ValueError("qos must be 0, 1, or 2")
+
+        result = self._client.publish(topic, payload, qos=qos, retain=retain)
+        if getattr(result, "rc", 0) != 0:
+            raise HardwareUnavailableError("MQTT publish failed")
+
+
+class PahoCommandSubscriber:
+    """Small command subscriber that forwards UTF-8 payloads to a handler."""
+
+    def __init__(
+        self,
+        host: str,
+        topic: str,
+        handler: Callable[[str], None],
+        *,
+        port: int = 1883,
+        qos: int = 1,
+    ) -> None:
+        """Create an unopened command subscriber."""
+        self._host = host
+        self._port = port
+        self._topic = topic
+        self._handler = handler
+        self._qos = qos
+        self._client: Any | None = None
+
+    def open(self) -> None:
+        """Connect and subscribe."""
+        if self._client is not None:
+            return
+
+        try:
+            import paho.mqtt.client as mqtt
+        except ImportError as exc:
+            raise HardwareUnavailableError(
+                "paho-mqtt is unavailable; install the 'mqtt' extra"
+            ) from exc
+
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+
+        def on_message(
+            _client: Any,
+            _userdata: Any,
+            message: Any,
+        ) -> None:
+            self._handler(message.payload.decode("utf-8"))
+
+        client.on_message = on_message
+        try:
+            client.connect(self._host, self._port)
+            client.subscribe(self._topic, qos=self._qos)
+            client.loop_start()
+        except OSError as exc:
+            client.disconnect()
+            raise HardwareUnavailableError("unable to connect MQTT subscriber") from exc
+
+        self._client = client
+
+    def close(self) -> None:
+        """Stop network processing and disconnect."""
+        if self._client is not None:
+            self._client.loop_stop()
+            self._client.disconnect()
+            self._client = None
