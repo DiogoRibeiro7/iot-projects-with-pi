@@ -1,5 +1,6 @@
 """Typed interfaces shared by hardware adapters."""
 
+from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
@@ -8,9 +9,11 @@ from typing import Protocol, runtime_checkable
 class Lifecycle(Protocol):
     """Lifecycle contract for hardware resources."""
 
+    @abstractmethod
     def open(self) -> None:
         """Initialize the resource."""
 
+    @abstractmethod
     def close(self) -> None:
         """Release the resource."""
 
@@ -19,6 +22,7 @@ class Lifecycle(Protocol):
 class DigitalInput(Lifecycle, Protocol):
     """Digital input abstraction."""
 
+    @abstractmethod
     def read(self) -> bool:
         """Return the current logical input state."""
 
@@ -27,9 +31,11 @@ class DigitalInput(Lifecycle, Protocol):
 class DigitalOutput(Lifecycle, Protocol):
     """Digital output abstraction."""
 
+    @abstractmethod
     def write(self, state: bool) -> None:
         """Set the logical output state."""
 
+    @abstractmethod
     def read(self) -> bool:
         """Return the current logical output state."""
 
@@ -38,6 +44,7 @@ class DigitalOutput(Lifecycle, Protocol):
 class AnalogSensor(Lifecycle, Protocol):
     """Analogue sensor abstraction for ADC-backed devices."""
 
+    @abstractmethod
     def read(self) -> float:
         """Return the current sensor value."""
 
@@ -54,6 +61,7 @@ class TemperatureHumidityReading:
 class TemperatureHumiditySensor(Lifecycle, Protocol):
     """Combined temperature and humidity sensor abstraction."""
 
+    @abstractmethod
     def read(self) -> TemperatureHumidityReading:
         """Return one environmental observation."""
 
