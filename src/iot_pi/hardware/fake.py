@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass, field
 
+from iot_pi.hardware.errors import HardwareUnavailableError
+
 
 @dataclass(slots=True)
 class FakeDigitalInput:
@@ -12,6 +14,8 @@ class FakeDigitalInput:
 
     def open(self) -> None:
         """Mark the fake input as initialized."""
+        if self.is_open:
+            return
         self.is_open = True
 
     def close(self) -> None:
@@ -21,7 +25,7 @@ class FakeDigitalInput:
     def read(self) -> bool:
         """Return the configured logical state."""
         if not self.is_open:
-            raise RuntimeError("digital input is not open")
+            raise HardwareUnavailableError("digital input is not open")
         return self.state
 
 
@@ -35,6 +39,8 @@ class FakeDigitalOutput:
 
     def open(self) -> None:
         """Initialize the fake output to its configured state."""
+        if self.is_open:
+            return
         self._state = self.initial_state
         self.is_open = True
 
@@ -46,11 +52,11 @@ class FakeDigitalOutput:
     def write(self, state: bool) -> None:
         """Set the logical output state."""
         if not self.is_open:
-            raise RuntimeError("digital output is not open")
+            raise HardwareUnavailableError("digital output is not open")
         self._state = state
 
     def read(self) -> bool:
         """Return the current logical output state."""
         if not self.is_open:
-            raise RuntimeError("digital output is not open")
+            raise HardwareUnavailableError("digital output is not open")
         return self._state
