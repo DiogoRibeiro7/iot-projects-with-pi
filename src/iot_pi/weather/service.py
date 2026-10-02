@@ -34,9 +34,7 @@ class WeatherStation:
     ) -> None:
         """Create a weather-station service."""
         if not isfinite(sample_interval_seconds) or sample_interval_seconds <= 0:
-            raise ValueError(
-                "sample_interval_seconds must be a positive finite number"
-            )
+            raise ValueError("sample_interval_seconds must be a positive finite number")
 
         if not isinstance(sensor, TemperatureHumiditySensor):
             raise TypeError("sensor does not satisfy TemperatureHumiditySensor")
