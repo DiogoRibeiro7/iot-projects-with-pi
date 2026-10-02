@@ -1,7 +1,7 @@
 """Command-line interface for the home-automation reference project."""
 
-from argparse import ArgumentParser
 import logging
+from argparse import ArgumentParser
 
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
 from iot_pi.hardware.gpiozero import GpioZeroDigitalInput, GpioZeroRelay
