@@ -1,11 +1,11 @@
 """Weather-station application service."""
 
-from collections.abc import Callable
-from datetime import UTC, datetime
 import json
 import logging
-from math import isfinite
 import time
+from collections.abc import Callable
+from datetime import UTC, datetime
+from math import isfinite
 
 from iot_pi.hardware.interfaces import TemperatureHumiditySensor
 from iot_pi.observability.health import HealthTracker
