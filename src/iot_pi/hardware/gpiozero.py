@@ -88,7 +88,8 @@ class GpioZeroRelay:
             )
         except bad_pin_factory as exc:
             raise HardwareUnavailableError(
-                "gpiozero is installed but no usable Raspberry Pi pin factory is available"
+                "gpiozero is installed but no usable Raspberry Pi "
+                "pin factory is available"
             ) from exc
 
     def close(self) -> None:
