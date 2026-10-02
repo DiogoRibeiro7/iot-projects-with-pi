@@ -28,8 +28,7 @@ def test_telemetry_message_serializes_stable_schema() -> None:
 def test_command_message_parses_valid_payload() -> None:
     """A valid override command should round-trip into a typed model."""
     command = CommandMessage.from_json(
-        '{"device_id":"pi-01","command":"off",'
-        '"timestamp":"2026-10-01T12:00:00+00:00"}'
+        '{"device_id":"pi-01","command":"off","timestamp":"2026-10-01T12:00:00+00:00"}'
     )
 
     assert command.device_id == "pi-01"
