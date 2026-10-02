@@ -81,8 +81,8 @@ class DhtTemperatureHumiditySensor:
             return
 
         try:
-            import adafruit_dht
-            import board
+            import adafruit_dht  # type: ignore[import-untyped]
+            import board  # type: ignore[import-untyped]
         except (ImportError, OSError, NotImplementedError) as exc:
             raise HardwareUnavailableError(
                 "DHT dependencies are unavailable; install the 'dht' extra "
