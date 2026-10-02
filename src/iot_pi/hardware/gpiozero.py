@@ -41,7 +41,8 @@ class GpioZeroDigitalInput:
             self._device = button_type(self._pin, pull_up=self._pull_up)
         except bad_pin_factory as exc:
             raise HardwareUnavailableError(
-                "gpiozero is installed but no usable Raspberry Pi pin factory is available"
+                "gpiozero is installed but no usable Raspberry Pi "
+                "pin factory is available"
             ) from exc
 
     def close(self) -> None:
