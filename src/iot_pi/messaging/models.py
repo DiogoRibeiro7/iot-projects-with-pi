@@ -1,8 +1,8 @@
 """Typed MQTT message models and JSON serialization."""
 
+import json
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
-import json
 from typing import Any
 
 
