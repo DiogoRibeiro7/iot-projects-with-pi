@@ -1,7 +1,7 @@
 """Command-line interface for the weather station."""
 
-from argparse import ArgumentParser, ArgumentTypeError
 import logging
+from argparse import ArgumentParser, ArgumentTypeError
 from math import isfinite
 from pathlib import Path
 
