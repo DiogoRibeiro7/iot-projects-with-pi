@@ -48,8 +48,9 @@ class PahoMqttPublisher:
 
         last_error: Exception | None = None
         for attempt in range(self._connect_retries):
+            callback_api = getattr(mqtt, "CallbackAPIVersion").VERSION2
             client = mqtt.Client(
-                mqtt.CallbackAPIVersion.VERSION2,
+                callback_api,
                 client_id=self._client_id,
             )
             try:
@@ -126,7 +127,8 @@ class PahoCommandSubscriber:
                 "paho-mqtt is unavailable; install the 'mqtt' extra"
             ) from exc
 
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        callback_api = getattr(mqtt, "CallbackAPIVersion").VERSION2
+        client = mqtt.Client(callback_api)
 
         def on_message(
             _client: Any,
