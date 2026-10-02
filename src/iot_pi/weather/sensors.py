@@ -97,9 +97,7 @@ class DhtTemperatureHumiditySensor:
             ) from exc
 
         sensor_type = (
-            adafruit_dht.DHT22
-            if self._model == "DHT22"
-            else adafruit_dht.DHT11
+            adafruit_dht.DHT22 if self._model == "DHT22" else adafruit_dht.DHT11
         )
         try:
             self._device = sensor_type(pin)
