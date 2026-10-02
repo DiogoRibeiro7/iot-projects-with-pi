@@ -8,6 +8,8 @@ from math import isfinite
 import time
 
 from iot_pi.hardware.interfaces import TemperatureHumiditySensor
+from iot_pi.observability.health import HealthTracker
+from iot_pi.observability.storage import SQLiteEventRepository
 from iot_pi.weather.models import WeatherObservation
 from iot_pi.weather.storage import SQLiteWeatherStore
 
@@ -27,6 +29,8 @@ class WeatherStation:
         clock: Clock | None = None,
         sleeper: Sleeper | None = None,
         logger: logging.Logger | None = None,
+        health: HealthTracker | None = None,
+        events: SQLiteEventRepository | None = None,
     ) -> None:
         """Create a weather-station service."""
         if not isfinite(sample_interval_seconds) or sample_interval_seconds <= 0:
@@ -43,14 +47,21 @@ class WeatherStation:
         self._clock = clock or (lambda: datetime.now(UTC))
         self._sleeper = sleeper or time.sleep
         self._logger = logger or logging.getLogger("iot_pi.weather")
+        self._health = health
+        self._events = events
 
     def open(self) -> None:
         """Initialize sensor and storage resources safely."""
         self._sensor.open()
         try:
             self._store.open()
+            if self._events is not None:
+                self._events.open()
         except Exception:
             self._sensor.close()
+            self._store.close()
+            if self._events is not None:
+                self._events.close()
             raise
 
     def close(self) -> None:
@@ -58,25 +69,49 @@ class WeatherStation:
         try:
             self._sensor.close()
         finally:
-            self._store.close()
+            try:
+                self._store.close()
+            finally:
+                if self._events is not None:
+                    self._events.close()
 
     def sample_once(self) -> WeatherObservation:
         """Collect, validate, persist, and log one observation."""
-        reading = self._sensor.read()
+        try:
+            reading = self._sensor.read()
+        except Exception:
+            if self._health is not None:
+                self._health.record_sensor_failure()
+            raise
+
         observation = WeatherObservation(
             timestamp=self._clock(),
             temperature_c=reading.temperature_c,
             relative_humidity_percent=reading.relative_humidity_percent,
         )
         self._store.save(observation)
+
+        if self._health is not None:
+            self._health.record_success(timestamp=observation.timestamp)
+
+        event_payload = {
+            "temperature_c": observation.temperature_c,
+            "relative_humidity_percent": observation.relative_humidity_percent,
+            "pressure_hpa": observation.pressure_hpa,
+        }
+        if self._events is not None:
+            self._events.append(
+                "weather_observation",
+                event_payload,
+                timestamp=observation.timestamp,
+            )
+
         self._logger.info(
             json.dumps(
                 {
                     "event": "weather_observation",
                     "timestamp": observation.timestamp.isoformat(),
-                    "temperature_c": observation.temperature_c,
-                    "relative_humidity_percent": observation.relative_humidity_percent,
-                    "pressure_hpa": observation.pressure_hpa,
+                    **event_payload,
                 },
                 sort_keys=True,
             )
