@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from random import Random
-import time
 from typing import Any
 
 from iot_pi.hardware.errors import HardwareUnavailableError
@@ -85,7 +85,8 @@ class DhtTemperatureHumiditySensor:
             import board
         except (ImportError, OSError, NotImplementedError) as exc:
             raise HardwareUnavailableError(
-                "DHT dependencies are unavailable; install the 'dht' extra on a Raspberry Pi"
+                "DHT dependencies are unavailable; install the 'dht' extra "
+                "on a Raspberry Pi"
             ) from exc
 
         try:
@@ -95,7 +96,11 @@ class DhtTemperatureHumiditySensor:
                 f"unknown Raspberry Pi board pin: {self._pin_name}"
             ) from exc
 
-        sensor_type = adafruit_dht.DHT22 if self._model == "DHT22" else adafruit_dht.DHT11
+        sensor_type = (
+            adafruit_dht.DHT22
+            if self._model == "DHT22"
+            else adafruit_dht.DHT11
+        )
         try:
             self._device = sensor_type(pin)
         except (RuntimeError, ValueError, OSError) as exc:
