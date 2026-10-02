@@ -1,7 +1,7 @@
 """SQLite persistence for weather observations."""
 
-from pathlib import Path
 import sqlite3
+from pathlib import Path
 
 from iot_pi.weather.models import WeatherObservation
 
