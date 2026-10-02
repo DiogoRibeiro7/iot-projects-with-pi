@@ -1,7 +1,7 @@
 """Tests for broker-independent application messaging."""
 
-from datetime import UTC, datetime
 import json
+from datetime import UTC, datetime
 
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
 from iot_pi.home.rules import AutomationPolicy
