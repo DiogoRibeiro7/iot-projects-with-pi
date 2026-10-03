@@ -75,6 +75,15 @@ infrastructure code.
 See [docs/architecture.md](docs/architecture.md) for the repository boundaries
 and design principles.
 
+## Deployment
+
+For Raspberry Pi deployment, use the native `systemd` path by default. An
+optional Docker/Compose setup is also provided for simulation and controlled
+container deployments.
+
+See [docs/deployment.md](docs/deployment.md) for the complete installation,
+service, container, GPIO-permission, and update procedures.
+
 ## Roadmap
 
 Development is tracked through GitHub issues. The roadmap covers repository
