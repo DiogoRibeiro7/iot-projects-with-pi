@@ -21,16 +21,30 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python and Poetry
-        uses: DiogoRibeiro7/git-actions-collection/.github/actions/setup-poetry@v1
+        uses: DiogoRibeiro7/git-actions-collection/.github/actions/setup-poetry@v1.4.0
         with:
           python-version: "3.12"
           install-deps: "false"
 
       - name: Install dependencies
         run: poetry install --all-extras
+
+      - name: Emit generated lockfile
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+
+          encoded = base64.b64encode(Path("poetry.lock").read_bytes()).decode("ascii")
+          print("LOCK_B64_BEGIN")
+          for index in range(0, len(encoded), 4000):
+              print(encoded[index:index + 4000])
+          print("LOCK_B64_END")
+          PY
 
       - name: Ruff lint
         run: poetry run ruff check .
