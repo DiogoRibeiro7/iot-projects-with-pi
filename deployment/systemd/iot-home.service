@@ -1,0 +1,29 @@
+[Unit]
+Description=IoT Raspberry Pi Home Automation
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=iot
+Group=iot
+WorkingDirectory=/opt/iot-projects-with-pi
+EnvironmentFile=/etc/iot-projects-with-pi/home.env
+ExecStart=/opt/iot-projects-with-pi/.venv/bin/iot-home \
+    --dht-model ${DHT_MODEL} \
+    --dht-pin ${DHT_PIN} \
+    --motion-pin ${MOTION_PIN} \
+    --relay-pin ${RELAY_PIN} \
+    --temperature-on ${TEMPERATURE_ON} \
+    --temperature-off ${TEMPERATURE_OFF} \
+    --override ${OVERRIDE_MODE}
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

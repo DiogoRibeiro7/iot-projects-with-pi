@@ -1,0 +1,28 @@
+[Unit]
+Description=IoT Raspberry Pi Weather Station
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=iot
+Group=iot
+WorkingDirectory=/opt/iot-projects-with-pi
+EnvironmentFile=/etc/iot-projects-with-pi/weather.env
+ExecStart=/opt/iot-projects-with-pi/.venv/bin/iot-weather \
+    --database ${WEATHER_DATABASE} \
+    --interval ${WEATHER_INTERVAL} \
+    --samples ${WEATHER_SAMPLES} \
+    --model ${DHT_MODEL} \
+    --pin ${DHT_PIN}
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/iot-projects-with-pi
+
+[Install]
+WantedBy=multi-user.target
