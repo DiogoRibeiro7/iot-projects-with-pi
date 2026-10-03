@@ -134,9 +134,7 @@ def test_dht_read_fails_after_retry_budget(
         retries=2,
         retry_delay_seconds=0.01,
     )
-    sensor._device = FakeDhtDevice(
-        [RuntimeError("first"), RuntimeError("second")]
-    )
+    sensor._device = FakeDhtDevice([RuntimeError("first"), RuntimeError("second")])
     monkeypatch.setattr("iot_pi.weather.sensors.time.sleep", lambda _: None)
 
     with pytest.raises(HardwareUnavailableError, match="after 2 attempts"):
