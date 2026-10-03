@@ -33,7 +33,7 @@ poetry build
 ## Workflow reuse
 
 Python and Poetry setup uses the supported `setup-poetry` action from
-`DiogoRibeiro7/git-actions-collection@v1`. The individual project checks remain
+`DiogoRibeiro7/git-actions-collection@v1.4.0`. The individual project checks remain
 explicit in this repository so failures are easy to diagnose.
 
 ## Coverage
