@@ -56,6 +56,10 @@ testpaths = ["tests"]
 [tool.coverage.run]
 branch = true
 source = ["iot_pi"]
+omit = [
+    "src/iot_pi/*/cli.py",
+    "src/iot_pi/messaging/mqtt.py",
+]
 
 [tool.coverage.report]
 show_missing = true
