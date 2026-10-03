@@ -7,6 +7,7 @@ import pytest
 
 from iot_pi.observability.storage import SQLiteEventRepository
 
+
 def test_event_repository_persists_across_reopen(tmp_path: Path) -> None:
     """Events should survive process-style close and reopen cycles."""
     path = tmp_path / "events.db"
@@ -26,6 +27,7 @@ def test_event_repository_persists_across_reopen(tmp_path: Path) -> None:
         assert reopened.count() == 1
     finally:
         reopened.close()
+
 
 def test_event_repository_prunes_expired_rows(tmp_path: Path) -> None:
     """Retention cleanup should delete only expired events."""
