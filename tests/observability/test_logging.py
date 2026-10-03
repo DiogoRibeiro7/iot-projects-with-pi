@@ -8,6 +8,7 @@ import pytest
 
 from iot_pi.observability.logging import configure_json_logging
 
+
 def test_json_logger_writes_structured_record(tmp_path: Path) -> None:
     """Configured logging should emit parseable JSON."""
     path = tmp_path / "iot.log"
@@ -41,6 +42,7 @@ def test_json_logger_rejects_invalid_rotation_config(
             backup_count=backup_count,
         )
 
+
 def test_json_logger_reconfiguration_replaces_existing_handler(
     tmp_path: Path,
 ) -> None:
@@ -53,6 +55,7 @@ def test_json_logger_reconfiguration_replaces_existing_handler(
 
     assert len(logger.handlers) == 1
     assert logger.handlers[0] is not first_handler
+
 
 def test_json_logger_serializes_exception_information(tmp_path: Path) -> None:
     """Exception logging should include a rendered traceback."""
