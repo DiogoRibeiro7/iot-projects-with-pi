@@ -1,10 +1,11 @@
 """Command-line interface for the home-automation reference project."""
 
-from argparse import ArgumentParser
 import logging
+from argparse import ArgumentParser
 
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
 from iot_pi.hardware.gpiozero import GpioZeroDigitalInput, GpioZeroRelay
+from iot_pi.hardware.interfaces import DigitalInput, Relay, TemperatureHumiditySensor
 from iot_pi.home.rules import AutomationPolicy
 from iot_pi.home.service import HomeAutomationController, OverrideMode
 from iot_pi.weather.sensors import (
@@ -35,6 +36,10 @@ def main() -> int:
     """Run one home-automation evaluation cycle."""
     args = build_parser().parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    climate: TemperatureHumiditySensor
+    motion: DigitalInput
+    relay: Relay
 
     if args.simulation:
         climate = SimulatedTemperatureHumiditySensor(base_temperature_c=29.0)

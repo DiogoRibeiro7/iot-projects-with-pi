@@ -1,7 +1,7 @@
 """Tests for broker-independent application messaging."""
 
-from datetime import UTC, datetime
 import json
+from datetime import UTC, datetime
 
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
 from iot_pi.home.rules import AutomationPolicy
@@ -38,8 +38,7 @@ def test_home_controller_accepts_typed_override_command() -> None:
         policy=AutomationPolicy(),
     )
     payload = (
-        '{"device_id":"pi-01","command":"off",'
-        '"timestamp":"2026-10-01T12:00:00+00:00"}'
+        '{"device_id":"pi-01","command":"off","timestamp":"2026-10-01T12:00:00+00:00"}'
     )
 
     command = apply_override_command(controller, payload, device_id="pi-01")

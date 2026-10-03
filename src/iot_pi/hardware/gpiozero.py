@@ -12,8 +12,8 @@ from iot_pi.hardware.errors import HardwareUnavailableError
 def _load_gpiozero() -> tuple[type[Any], type[Any], type[Exception]]:
     """Load gpiozero classes only when real hardware is requested."""
     try:
-        from gpiozero import Button, OutputDevice
-        from gpiozero.exc import BadPinFactory
+        from gpiozero import Button, OutputDevice  # type: ignore[import-untyped]
+        from gpiozero.exc import BadPinFactory  # type: ignore[import-untyped]
     except (ImportError, OSError) as exc:
         raise HardwareUnavailableError(
             "gpiozero is unavailable; install the 'hardware' extra on a Raspberry Pi"
@@ -41,7 +41,8 @@ class GpioZeroDigitalInput:
             self._device = button_type(self._pin, pull_up=self._pull_up)
         except bad_pin_factory as exc:
             raise HardwareUnavailableError(
-                "gpiozero is installed but no usable Raspberry Pi pin factory is available"
+                "gpiozero is installed but no usable Raspberry Pi "
+                "pin factory is available"
             ) from exc
 
     def close(self) -> None:
@@ -87,7 +88,8 @@ class GpioZeroRelay:
             )
         except bad_pin_factory as exc:
             raise HardwareUnavailableError(
-                "gpiozero is installed but no usable Raspberry Pi pin factory is available"
+                "gpiozero is installed but no usable Raspberry Pi "
+                "pin factory is available"
             ) from exc
 
     def close(self) -> None:

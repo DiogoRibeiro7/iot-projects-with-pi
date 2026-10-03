@@ -1,11 +1,11 @@
 """Weather-station application service."""
 
-from collections.abc import Callable
-from datetime import UTC, datetime
 import json
 import logging
-from math import isfinite
 import time
+from collections.abc import Callable
+from datetime import UTC, datetime
+from math import isfinite
 
 from iot_pi.hardware.interfaces import TemperatureHumiditySensor
 from iot_pi.observability.health import HealthTracker
@@ -34,9 +34,7 @@ class WeatherStation:
     ) -> None:
         """Create a weather-station service."""
         if not isfinite(sample_interval_seconds) or sample_interval_seconds <= 0:
-            raise ValueError(
-                "sample_interval_seconds must be a positive finite number"
-            )
+            raise ValueError("sample_interval_seconds must be a positive finite number")
 
         if not isinstance(sensor, TemperatureHumiditySensor):
             raise TypeError("sensor does not satisfy TemperatureHumiditySensor")

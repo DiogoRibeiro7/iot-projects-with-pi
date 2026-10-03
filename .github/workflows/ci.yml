@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python and Poetry
+        uses: DiogoRibeiro7/git-actions-collection/.github/actions/setup-poetry@v1.4.0
+        with:
+          python-version: "3.12"
+          install-deps: "false"
+
+      - name: Validate dependency lock
+        run: poetry check --lock
+
+      - name: Install dependencies
+        run: poetry install --all-extras
+
+      - name: Ruff lint
+        run: poetry run ruff check .
+
+      - name: Ruff formatting
+        run: poetry run ruff format --check .
+
+      - name: mypy
+        run: poetry run mypy src
+
+      - name: pytest with coverage
+        run: poetry run pytest
+
+      - name: Build package
+        run: poetry build

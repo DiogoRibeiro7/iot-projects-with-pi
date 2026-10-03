@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from iot_pi.hardware.errors import HardwareUnavailableError
 
@@ -47,7 +48,11 @@ class PahoMqttPublisher:
 
         last_error: Exception | None = None
         for attempt in range(self._connect_retries):
-            client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=self._client_id)
+            callback_api = mqtt.CallbackAPIVersion.VERSION2  # type: ignore[attr-defined]
+            client = mqtt.Client(
+                callback_api,
+                client_id=self._client_id,
+            )
             try:
                 client.connect(self._host, self._port)
                 client.loop_start()
@@ -122,7 +127,8 @@ class PahoCommandSubscriber:
                 "paho-mqtt is unavailable; install the 'mqtt' extra"
             ) from exc
 
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        callback_api = mqtt.CallbackAPIVersion.VERSION2  # type: ignore[attr-defined]
+        client = mqtt.Client(callback_api)
 
         def on_message(
             _client: Any,
