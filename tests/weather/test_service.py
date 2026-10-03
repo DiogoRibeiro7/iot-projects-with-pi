@@ -106,3 +106,22 @@ def test_station_closes_sensor_when_store_open_fails(tmp_path: Path) -> None:
         station.open()
 
     assert sensor.is_open is False
+
+
+
+def test_weather_store_validates_lifecycle_and_empty_latest(tmp_path: Path) -> None:
+    """Weather storage should reject closed access and support an empty database."""
+    store = SQLiteWeatherStore(tmp_path / "weather.db")
+
+    with pytest.raises(RuntimeError, match="not open"):
+        store.count()
+    with pytest.raises(RuntimeError, match="not open"):
+        store.latest()
+
+    store.open()
+    store.open()
+    try:
+        assert store.latest() is None
+    finally:
+        store.close()
+        store.close()
