@@ -47,5 +47,8 @@ jobs:
       - name: pytest with coverage
         run: poetry run pytest
 
+      - name: Project tests without repository coverage
+        run: poetry run pytest --no-cov projects
+
       - name: Build package
         run: poetry build
