@@ -37,6 +37,7 @@ def test_controller_applies_policy_decision() -> None:
     finally:
         controller.close()
 
+
 def test_manual_override_forces_output_state() -> None:
     """Manual override should take precedence over automatic rules."""
     controller, relay = build_controller()
@@ -51,6 +52,7 @@ def test_manual_override_forces_output_state() -> None:
         assert relay.read() is False
     finally:
         controller.close()
+
 
 def test_close_deenergizes_relay() -> None:
     """Controller shutdown should always leave the relay off."""
@@ -70,12 +72,14 @@ class FailingMotionInput(FakeDigitalInput):
         """Simulate a GPIO initialization failure."""
         raise RuntimeError("motion unavailable")
 
+
 class FailingClimateSensor(SimulatedTemperatureHumiditySensor):
     """Climate sensor that fails while reading."""
 
     def read(self):
         """Simulate a sensor read failure."""
         raise RuntimeError("climate unavailable")
+
 
 def test_open_rolls_back_already_open_resources() -> None:
     """Partial startup failure should close the climate sensor again."""
@@ -92,6 +96,7 @@ def test_open_rolls_back_already_open_resources() -> None:
 
     with pytest.raises(RuntimeError, match="not open"):
         climate.read()
+
 
 def test_sensor_failure_updates_health_tracker() -> None:
     """Sensor exceptions should be reflected in shared health state."""
@@ -111,6 +116,7 @@ def test_sensor_failure_updates_health_tracker() -> None:
         assert health.snapshot().sensor_failures == 1
     finally:
         controller.close()
+
 
 def test_manual_force_on_override() -> None:
     """Force-on override should bypass the automatic policy."""
