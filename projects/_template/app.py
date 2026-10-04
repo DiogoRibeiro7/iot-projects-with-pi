@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from argparse import ArgumentParser
 from dataclasses import dataclass
 
 
@@ -13,6 +14,17 @@ class ProjectConfig:
     simulation: bool = True
 
 
+def build_parser() -> ArgumentParser:
+    """Build the project command-line parser."""
+    parser = ArgumentParser(description="Reusable Raspberry Pi project template")
+    parser.add_argument(
+        "--simulation",
+        action="store_true",
+        help="Run with simulated hardware.",
+    )
+    return parser
+
+
 def run(config: ProjectConfig) -> int:
     """Run one template application cycle."""
     mode = "simulation" if config.simulation else "hardware"
@@ -21,8 +33,9 @@ def run(config: ProjectConfig) -> int:
 
 
 def main() -> int:
-    """Run the template with safe defaults."""
-    return run(ProjectConfig())
+    """Run the template command-line application."""
+    args = build_parser().parse_args()
+    return run(ProjectConfig(simulation=args.simulation))
 
 
 if __name__ == "__main__":
