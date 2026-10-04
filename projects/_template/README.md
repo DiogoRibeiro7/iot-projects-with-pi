@@ -62,7 +62,7 @@ Copy the example configuration:
 cp projects/_template/config.example.toml config.toml
 ```
 
-Document every option here.
+The template entrypoint loads this TOML file with `tomllib`. Document every option here.
 
 ## Execution
 
@@ -87,10 +87,10 @@ python projects/_template/app.py
 ## Testing without hardware
 
 ```bash
-poetry run pytest projects/_template/tests
+poetry run pytest --no-cov projects/_template/tests
 ```
 
-The template uses simulation/fake components so tests do not require GPIO.
+The template uses simulation/fake components so tests do not require GPIO. The default simulation fixture is loaded from `simulation.json`.
 
 ## Troubleshooting
 
