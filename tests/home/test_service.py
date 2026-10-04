@@ -24,6 +24,7 @@ def build_controller() -> tuple[HomeAutomationController, FakeDigitalOutput]:
     )
     return controller, relay
 
+
 def test_controller_applies_policy_decision() -> None:
     """The controller should propagate policy state to the relay."""
     controller, relay = build_controller()
