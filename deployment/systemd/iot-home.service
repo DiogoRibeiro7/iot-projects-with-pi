@@ -16,7 +16,9 @@ ExecStart=/opt/iot-projects-with-pi/.venv/bin/iot-home \
     --relay-pin ${RELAY_PIN} \
     --temperature-on ${TEMPERATURE_ON} \
     --temperature-off ${TEMPERATURE_OFF} \
-    --override ${OVERRIDE_MODE}
+    --override ${OVERRIDE_MODE} \
+    --continuous \
+    --interval ${HOME_INTERVAL_SECONDS}
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=15
