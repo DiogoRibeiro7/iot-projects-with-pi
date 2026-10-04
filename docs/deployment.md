@@ -48,9 +48,20 @@ sudo chmod 0640 /etc/iot-projects-with-pi/weather.env
 
 Edit the file for the connected sensor and pin mapping.
 
+For home automation, copy its environment template too:
+
+```bash
+sudo cp deployment/env/home.env.example \
+  /etc/iot-projects-with-pi/home.env
+sudo chmod 0640 /etc/iot-projects-with-pi/home.env
+```
+
+Edit `home.env` for the DHT sensor, motion input, relay pin, thresholds, and
+evaluation interval.
+
 ## systemd
 
-Install the service unit:
+Install the weather service:
 
 ```bash
 sudo cp deployment/systemd/iot-weather.service /etc/systemd/system/
@@ -58,15 +69,27 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now iot-weather.service
 ```
 
-Inspect the service:
+Install the home-automation service:
+
+```bash
+sudo cp deployment/systemd/iot-home.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now iot-home.service
+```
+
+Inspect either service:
 
 ```bash
 systemctl status iot-weather.service
 journalctl -u iot-weather.service -f
+
+systemctl status iot-home.service
+journalctl -u iot-home.service -f
 ```
 
-The unit runs as the dedicated `iot` account, uses `NoNewPrivileges`, and
-limits filesystem writes to the application data directory.
+The units run as the dedicated `iot` account and use `NoNewPrivileges`.
+The weather unit limits filesystem writes to the application data directory.
+The home unit runs its controller continuously at the configured interval.
 
 ### GPIO permissions
 
@@ -96,7 +119,7 @@ docker compose up --build
 
 The Compose file starts:
 
-- a Mosquitto broker on port 1883;
+- a Mosquitto broker bound to host loopback on port 1883;
 - a simulated weather station with persistent SQLite storage.
 
 The current weather CLI does not require MQTT to operate; the broker is included
@@ -150,5 +173,6 @@ repository checkout.
 - grant only required hardware-device groups;
 - avoid storing credentials in the repository;
 - restrict environment-file permissions;
-- do not expose an unauthenticated MQTT broker outside a trusted local network;
+- the example anonymous MQTT broker is bound to `127.0.0.1`; require
+  authentication before exposing a broker to other hosts;
 - avoid privileged containers for GPIO access.
