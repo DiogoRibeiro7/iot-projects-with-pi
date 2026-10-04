@@ -3,57 +3,74 @@
 ## Purpose
 
 Demonstrate a Raspberry Pi automation controller that combines environmental
-sensing, occupancy input, rule-based decisions, and a relay actuator while
-keeping business rules independent from GPIO libraries.
+input, occupancy state, configurable rules, and a relay actuator behind the
+shared `iot_pi` hardware abstractions.
 
 ## Architecture
 
 ```text
-DHT sensor ----\
-                -> HomeAutomationController -> automation policy -> relay
-PIR/motion ----/                               |
-                                                -> logs/events/health
+temperature/humidity ----+
+                         |
+motion/occupancy --------+--> HomeAutomationController --> relay
+                         |
+manual override ---------+
 ```
 
-Hardware access is provided through shared `iot_pi.hardware` interfaces.
-Automation decisions live in pure application code and can be tested without
-GPIO.
+The automation policy is independent from GPIO libraries and can be tested
+without physical hardware.
+
+## Features
+
+- DHT11/DHT22 climate input;
+- PIR/digital occupancy input;
+- relay-controlled actuator;
+- temperature thresholds with hysteresis;
+- optional occupancy requirement;
+- manual `auto`, `on`, and `off` override modes;
+- deterministic simulation;
+- structured decision logs;
+- continuous execution mode;
+- safe relay shutdown.
 
 ## Bill of materials
 
 | Component | Quantity | Notes |
 | --- | ---: | --- |
 | Raspberry Pi | 1 | GPIO-capable model |
-| DHT11 or DHT22 | 1 | Temperature/humidity |
-| PIR motion sensor | 1 | Digital occupancy input |
-| Relay module | 1 | Must match logic and load requirements |
-| Jumper wires | As needed | Low-voltage GPIO wiring |
+| DHT11 or DHT22 | 1 | Climate sensor |
+| PIR/digital motion sensor | 1 | Occupancy input |
+| Relay module | 1 | Use an appropriately rated isolated module |
+| Jumper wires | As needed | Low-voltage side only |
 
 ## Supported Raspberry Pi models
 
-The project is designed around GPIOZero and CircuitPython-compatible Raspberry
-Pi GPIO access. Record physical validation for specific Pi and relay combinations
-before marking them tested.
+The project targets GPIO-capable Raspberry Pi models supported by `gpiozero`
+and Adafruit Blinka. Raspberry Pi 3, 4, and 5 class devices are the intended
+targets.
 
 ## Wiring and pin mapping
 
-Default CLI example:
+Default example:
 
-| Component | Default | Numbering |
+| Component | Raspberry Pi connection | Default |
 | --- | --- | --- |
-| DHT data | D4 | CircuitPython board name |
-| Motion input | GPIO17 | BCM |
-| Relay output | GPIO27 | BCM |
+| DHT data | CircuitPython `D4` | GPIO4 |
+| Motion input | BCM GPIO | 17 |
+| Relay output | BCM GPIO | 27 |
+| Sensor/relay ground | GND | Common ground |
 
-Actual wiring depends on the sensor and relay board. Verify voltage levels and
-active-high/active-low behavior before connecting an actuator.
+The DHT pin uses a CircuitPython board alias. Motion and relay values use BCM
+GPIO numbering.
 
 ## Software dependencies
 
-- Python 3.12
-- Poetry
-- `dht` extra for DHT sensor support
-- `hardware` extra for GPIOZero relay and digital input support
+Physical hardware support requires both Poetry extras:
+
+```bash
+poetry install -E dht -E hardware
+```
+
+This installs the DHT/Blika and `gpiozero` backends.
 
 ## Installation
 
@@ -71,28 +88,27 @@ poetry install -E dht -E hardware
 
 ## Configuration
 
-Key CLI options:
+Important CLI settings:
 
-| Option | Purpose | Default |
+| Option | Meaning | Default |
 | --- | --- | --- |
-| `--motion-pin` | BCM motion input | 17 |
-| `--relay-pin` | BCM relay output | 27 |
-| `--dht-pin` | DHT board pin | D4 |
-| `--dht-model` | DHT11 or DHT22 | DHT22 |
-| `--temperature-on` | Relay-on threshold | 28 |
-| `--temperature-off` | Relay-off threshold | 26 |
-| `--override` | auto/on/off | auto |
-| `--continuous` | Repeated evaluation mode | disabled |
-| `--interval` | Continuous-cycle delay | 5 seconds |
+| `--dht-model` | `DHT11` or `DHT22` | `DHT22` |
+| `--dht-pin` | CircuitPython DHT pin | `D4` |
+| `--motion-pin` | BCM motion GPIO | `17` |
+| `--relay-pin` | BCM relay GPIO | `27` |
+| `--temperature-on` | Relay-on threshold °C | `28` |
+| `--temperature-off` | Relay-off threshold °C | `26` |
+| `--override` | `auto`, `on`, or `off` | `auto` |
+| `--continuous` | Repeat controller evaluation | disabled |
+| `--interval` | Continuous interval in seconds | `5` |
 
-The off threshold must be lower than the on threshold.
+The off threshold must be strictly lower than the on threshold.
 
-For managed deployment, use the environment and systemd examples in
-[../../docs/deployment.md](../../docs/deployment.md).
+## Run
 
-## Execution
+### Simulation
 
-Simulation:
+One cycle:
 
 ```bash
 poetry run iot-home --simulation
@@ -104,7 +120,13 @@ Continuous simulation:
 poetry run iot-home --simulation --continuous --interval 5
 ```
 
-Physical hardware:
+Manual override:
+
+```bash
+poetry run iot-home --simulation --override off
+```
+
+### Raspberry Pi hardware
 
 ```bash
 poetry run iot-home \
@@ -115,25 +137,32 @@ poetry run iot-home \
   --continuous
 ```
 
-## Expected telemetry or output
+## Telemetry and output
 
-Each evaluation produces a structured automation-decision log containing
-temperature, humidity, occupancy, relay state, override mode, and decision
-reason.
+Each controller evaluation emits structured state including:
 
-Typical reasons include:
+- temperature;
+- relative humidity;
+- motion state;
+- desired relay state;
+- decision reason;
+- active override mode.
 
-- `temperature_high`
-- `temperature_recovered`
-- `hysteresis_hold`
-- `no_motion`
-- `manual_override_on`
-- `manual_override_off`
+Typed MQTT override commands use:
+
+```text
+iot/<device-id>/command/relay
+```
 
 ## Testing without hardware
 
-Fake digital inputs/outputs and the simulated climate sensor allow the controller
-and rules to run without a Raspberry Pi.
+The project uses:
+
+- `SimulatedTemperatureHumiditySensor`;
+- `FakeDigitalInput`;
+- `FakeDigitalOutput`.
+
+Run:
 
 ```bash
 poetry run pytest tests/home
@@ -141,26 +170,22 @@ poetry run pytest tests/home
 
 ## Troubleshooting
 
-- **GPIO backend unavailable:** install the `hardware` extra on the Pi.
-- **DHT backend unavailable:** install the `dht` extra.
-- **Relay behaves inversely:** verify relay active-high/active-low behavior.
-- **No automation response:** verify motion state and temperature thresholds.
-- **Continuous mode exits:** ensure `--interval` is positive and finite.
-- **Permission denied:** verify GPIO device-group membership.
+- **Relay does not change:** verify BCM pin numbering and active-high wiring.
+- **DHT unavailable:** install the `dht` extra and verify the board alias.
+- **Motion always active/inactive:** check PIR wiring and pull-up behavior.
+- **Threshold error:** ensure the off threshold is lower than the on threshold.
+- **Continuous mode exits:** use a positive finite interval.
 
 ## Safety
 
-The controller writes the relay to **off** during startup and shutdown. Managed
-systemd deployment sends SIGINT so the CLI cleanup path can explicitly
-de-energize the relay.
+The controller writes the relay to **off** during startup and shutdown and
+releases already-opened resources if initialization fails.
 
-Do not connect mains-voltage loads unless the relay, enclosure, wiring,
-protection, and installation are appropriate and performed by someone qualified
-for that electrical work.
+Do not switch mains voltage unless the relay module, enclosure, wiring,
+clearances, fusing, and installation are appropriate for the load. Prefer
+qualified electrical installation for mains-powered equipment.
 
-## Limitations and next steps
+## Deployment
 
-- the reference policy is intentionally simple and rule-based;
-- manual override is process-local rather than persistent;
-- MQTT command helpers exist, but the CLI does not yet subscribe to commands;
-- physical relay fail-safe behavior also depends on the selected relay board.
+See [../../docs/deployment.md](../../docs/deployment.md). The provided
+`iot-home.service` uses continuous mode and a safe shutdown signal.
