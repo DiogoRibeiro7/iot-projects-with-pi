@@ -21,6 +21,7 @@ ExecStart=/opt/iot-projects-with-pi/.venv/bin/iot-home \
     --interval ${HOME_INTERVAL_SECONDS}
 Restart=on-failure
 RestartSec=5
+KillSignal=SIGINT
 TimeoutStopSec=15
 NoNewPrivileges=true
 PrivateTmp=true
