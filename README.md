@@ -70,6 +70,9 @@ The roadmap starts with two complete reference applications:
 Additional projects should reuse the common package rather than duplicate
 infrastructure code.
 
+New projects should start from [projects/_template](projects/_template/README.md)
+and follow the [project documentation standard](docs/project-standard.md).
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for the repository boundaries
