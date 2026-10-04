@@ -70,7 +70,7 @@ Physical hardware support requires both Poetry extras:
 poetry install -E dht -E hardware
 ```
 
-This installs the DHT/Blika and `gpiozero` backends.
+This installs the DHT/Blinka (CircuitPython) and `gpiozero` backends.
 
 ## Installation
 
@@ -148,11 +148,15 @@ Each controller evaluation emits structured state including:
 - decision reason;
 - active override mode.
 
-Typed MQTT override commands use:
+The shared messaging layer defines the following command-topic convention for
+integrations:
 
 ```text
 iot/<device-id>/command/relay
 ```
+
+The current `iot-home` CLI does not subscribe to MQTT itself; external runtime
+wiring must connect the subscriber adapter to the typed override-command handler.
 
 ## Testing without hardware
 
@@ -165,7 +169,7 @@ The project uses:
 Run:
 
 ```bash
-poetry run pytest tests/home
+poetry run pytest --no-cov tests/home
 ```
 
 ## Troubleshooting
