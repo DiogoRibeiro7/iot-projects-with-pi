@@ -15,7 +15,7 @@ ExecStart=/opt/iot-projects-with-pi/.venv/bin/iot-weather \
     --samples ${WEATHER_SAMPLES} \
     --model ${DHT_MODEL} \
     --pin ${DHT_PIN}
-Restart=on-failure
+Restart=always
 RestartSec=5
 TimeoutStopSec=15
 NoNewPrivileges=true
