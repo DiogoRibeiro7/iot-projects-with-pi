@@ -132,7 +132,7 @@ The deterministic simulator is the default hardware-free test path.
 Run the weather tests with:
 
 ```bash
-poetry run pytest tests/weather
+poetry run pytest --no-cov tests/weather
 ```
 
 ## Troubleshooting
