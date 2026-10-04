@@ -41,6 +41,11 @@ projects/_template/
 The skeleton is intentionally small. Reusable infrastructure belongs in
 `src/iot_pi`, not inside each project.
 
+Project-local tests under `projects/**/tests` are outside the repository's
+default `testpaths = ["tests"]` coverage suite. CI runs them explicitly with
+`pytest --no-cov projects` so project regressions are still gated without
+distorting the core `iot_pi` coverage threshold.
+
 ## Purpose
 
 State what the project does, the problem it demonstrates, and why it exists in
