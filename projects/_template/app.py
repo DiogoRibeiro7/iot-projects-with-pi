@@ -94,9 +94,7 @@ def main() -> int:
         config = replace(config, simulation=args.simulation)
 
     readings = (
-        load_simulation_readings(args.simulation_fixture)
-        if config.simulation
-        else None
+        load_simulation_readings(args.simulation_fixture) if config.simulation else None
     )
     return run(config, readings=readings)
 
