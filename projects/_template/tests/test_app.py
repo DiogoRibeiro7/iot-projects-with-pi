@@ -26,9 +26,7 @@ def test_template_configuration_is_loaded_from_toml(tmp_path: Path) -> None:
     """TOML configuration should populate the shared AppConfig."""
     path = tmp_path / "config.toml"
     path.write_text(
-        'device_id = "pi-test"\n'
-        "simulation = true\n"
-        "sample_interval_seconds = 2.5\n",
+        'device_id = "pi-test"\nsimulation = true\nsample_interval_seconds = 2.5\n',
         encoding="utf-8",
     )
 
