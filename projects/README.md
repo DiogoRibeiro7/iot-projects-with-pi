@@ -13,7 +13,6 @@ All projects must follow
 A project README should cover:
 
 - purpose and architecture;
-- features;
 - bill of materials;
 - supported Raspberry Pi models;
 - wiring and pin mapping;
@@ -24,7 +23,7 @@ A project README should cover:
 - testing without hardware;
 - troubleshooting;
 - safety;
-- deployment.
+- limitations and next steps.
 
 ## Start a new project
 
