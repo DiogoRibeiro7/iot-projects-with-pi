@@ -1,7 +1,9 @@
 """Command-line interface for the home-automation reference project."""
 
 import logging
+import time
 from argparse import ArgumentParser
+from math import isfinite
 
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
 from iot_pi.hardware.gpiozero import GpioZeroDigitalInput, GpioZeroRelay
@@ -29,6 +31,8 @@ def build_parser() -> ArgumentParser:
         choices=("auto", "on", "off"),
         default="auto",
     )
+    parser.add_argument("--continuous", action="store_true")
+    parser.add_argument("--interval", type=float, default=5.0)
     return parser
 
 
@@ -61,9 +65,19 @@ def main() -> int:
     )
     controller.set_override(OverrideMode(args.override))
 
+    if not isfinite(args.interval) or args.interval <= 0:
+        raise ValueError("interval must be a positive finite number")
+
     try:
         controller.open()
-        controller.evaluate_once()
+        if args.continuous:
+            while True:
+                controller.evaluate_once()
+                time.sleep(args.interval)
+        else:
+            controller.evaluate_once()
+    except KeyboardInterrupt:
+        return 0
     finally:
         controller.close()
 

@@ -1,0 +1,30 @@
+services:
+  mqtt:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1883:1883"
+    volumes:
+      - ./deployment/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+
+  weather:
+    build:
+      context: .
+    restart: unless-stopped
+    command:
+      - --simulation
+      - --samples
+      - "1000000"
+      - --interval
+      - "60"
+      - --database
+      - /app/data/weather.db
+    volumes:
+      - weather-data:/app/data
+    depends_on:
+      - mqtt
+
+volumes:
+  mosquitto-data:
+  weather-data:
