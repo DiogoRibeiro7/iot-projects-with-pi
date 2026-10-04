@@ -77,19 +77,25 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now iot-home.service
 ```
 
-Inspect either service:
+Inspect the weather service:
 
 ```bash
 systemctl status iot-weather.service
 journalctl -u iot-weather.service -f
+```
 
+Inspect the home-automation service separately:
+
+```bash
 systemctl status iot-home.service
 journalctl -u iot-home.service -f
 ```
 
 The units run as the dedicated `iot` account and use `NoNewPrivileges`.
 The weather unit limits filesystem writes to the application data directory.
-The home unit runs its controller continuously at the configured interval.
+The home unit runs its controller continuously at the configured interval and
+uses `SIGINT` on shutdown so the CLI cleanup path explicitly de-energizes the
+relay before exiting.
 
 ### GPIO permissions
 
@@ -144,15 +150,18 @@ access is the primary requirement.
 
 ## Updating a deployed Pi
 
-A safe update flow is:
+A safe update flow for a device running both reference services is:
 
 ```bash
-sudo systemctl stop iot-weather.service
+sudo systemctl stop iot-weather.service iot-home.service
 cd /opt/iot-projects-with-pi
 git pull --ff-only
-poetry install -E dht
-sudo systemctl start iot-weather.service
+poetry install -E dht -E hardware
+sudo systemctl start iot-weather.service iot-home.service
 ```
+
+If only one reference service is deployed, stop, update dependencies for, and
+restart only that service.
 
 Validate `poetry.lock` before deployment if `pyproject.toml` changed:
 
