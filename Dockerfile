@@ -14,10 +14,12 @@ RUN apt-get update \
     && python -m pip install --no-cache-dir "poetry==${POETRY_VERSION}"
 
 COPY pyproject.toml poetry.lock README.md ./
+
+RUN poetry install --only main --all-extras --no-root
+
 COPY src ./src
 
-RUN poetry install --only main --all-extras --no-root \
-    && poetry install --only main --all-extras
+RUN poetry install --only main --all-extras
 
 FROM python:3.12-slim AS runtime
 
@@ -29,11 +31,9 @@ WORKDIR /app
 RUN useradd --create-home --uid 10001 iot
 
 COPY --from=builder /app/.venv /app/.venv
-COPY projects ./projects
-COPY docs ./docs
 
 RUN mkdir -p /app/data \
-    && chown -R iot:iot /app
+    && chown -R iot:iot /app/data
 
 USER iot
 
