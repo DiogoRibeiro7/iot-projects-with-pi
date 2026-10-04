@@ -1,0 +1,3 @@
+device_id = "pi-example"
+simulation = true
+sample_interval_seconds = 5.0
