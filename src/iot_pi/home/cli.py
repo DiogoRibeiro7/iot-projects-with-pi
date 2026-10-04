@@ -3,6 +3,7 @@
 import logging
 import time
 from argparse import ArgumentParser
+from math import isfinite
 
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
 from iot_pi.hardware.gpiozero import GpioZeroDigitalInput, GpioZeroRelay
@@ -64,8 +65,8 @@ def main() -> int:
     )
     controller.set_override(OverrideMode(args.override))
 
-    if args.interval <= 0:
-        raise ValueError("interval must be greater than zero")
+    if not isfinite(args.interval) or args.interval <= 0:
+        raise ValueError("interval must be a positive finite number")
 
     try:
         controller.open()
