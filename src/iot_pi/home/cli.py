@@ -1,6 +1,7 @@
 """Command-line interface for the home-automation reference project."""
 
 import logging
+import time
 from argparse import ArgumentParser
 
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
@@ -29,6 +30,8 @@ def build_parser() -> ArgumentParser:
         choices=("auto", "on", "off"),
         default="auto",
     )
+    parser.add_argument("--continuous", action="store_true")
+    parser.add_argument("--interval", type=float, default=5.0)
     return parser
 
 
@@ -61,9 +64,19 @@ def main() -> int:
     )
     controller.set_override(OverrideMode(args.override))
 
+    if args.interval <= 0:
+        raise ValueError("interval must be greater than zero")
+
     try:
         controller.open()
-        controller.evaluate_once()
+        if args.continuous:
+            while True:
+                controller.evaluate_once()
+                time.sleep(args.interval)
+        else:
+            controller.evaluate_once()
+    except KeyboardInterrupt:
+        return 0
     finally:
         controller.close()
 
