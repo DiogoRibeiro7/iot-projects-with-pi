@@ -105,7 +105,15 @@ def test_guard_records_forced_error_stop() -> None:
 
 @pytest.mark.parametrize(
     ("max_run", "cooldown"),
-    [(0.0, 1.0), (-1.0, 1.0), (1.0, -1.0)],
+    [
+        (0.0, 1.0),
+        (-1.0, 1.0),
+        (float("nan"), 1.0),
+        (float("inf"), 1.0),
+        (1.0, -1.0),
+        (1.0, float("nan")),
+        (1.0, float("inf")),
+    ],
 )
 def test_safety_config_rejects_invalid_intervals(
     max_run: float,
