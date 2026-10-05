@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from math import isfinite
 
 from iot_pi.agriculture.rules import IrrigationDecision, IrrigationState
 
@@ -20,10 +21,10 @@ class IrrigationSafetyConfig:
 
     def __post_init__(self) -> None:
         """Validate strictly positive safety intervals."""
-        if self.max_run_seconds <= 0:
-            raise ValueError("max_run_seconds must be greater than zero")
-        if self.cooldown_seconds < 0:
-            raise ValueError("cooldown_seconds must not be negative")
+        if not isfinite(self.max_run_seconds) or self.max_run_seconds <= 0:
+            raise ValueError("max_run_seconds must be a positive finite number")
+        if not isfinite(self.cooldown_seconds) or self.cooldown_seconds < 0:
+            raise ValueError("cooldown_seconds must be a non-negative finite number")
 
 
 class IrrigationSafetyGuard:
