@@ -141,7 +141,5 @@ class Mcp3008SoilMoistureSensor:
             raise HardwareUnavailableError("MCP3008 soil sensor is not open")
 
         raw = float(self._device.value)
-        moisture = 100.0 * (raw - self._dry_raw) / (
-            self._wet_raw - self._dry_raw
-        )
+        moisture = 100.0 * (raw - self._dry_raw) / (self._wet_raw - self._dry_raw)
         return round(min(100.0, max(0.0, moisture)), 2)
