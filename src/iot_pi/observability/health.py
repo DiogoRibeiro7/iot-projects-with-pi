@@ -6,6 +6,7 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from math import isfinite
 from time import monotonic
 from typing import Any
 
@@ -23,12 +24,12 @@ class HealthSnapshot:
 
     def __post_init__(self) -> None:
         """Validate health metric bounds."""
-        if self.uptime_seconds < 0:
-            raise ValueError("uptime_seconds must not be negative")
-        if self.sensor_failures < 0:
-            raise ValueError("sensor_failures must not be negative")
-        if self.backlog_size < 0:
-            raise ValueError("backlog_size must not be negative")
+        if not isfinite(self.uptime_seconds) or self.uptime_seconds < 0:
+            raise ValueError("uptime_seconds must be a non-negative finite number")
+        if isinstance(self.sensor_failures, bool) or self.sensor_failures < 0:
+            raise ValueError("sensor_failures must be a non-negative integer")
+        if isinstance(self.backlog_size, bool) or self.backlog_size < 0:
+            raise ValueError("backlog_size must be a non-negative integer")
         if (
             self.last_successful_sample is not None
             and self.last_successful_sample.tzinfo is None
@@ -66,9 +67,9 @@ class HealthSnapshot:
 
         if not isinstance(uptime_seconds, (int, float)):
             raise ValueError("uptime_seconds must be numeric")
-        if not isinstance(sensor_failures, int):
+        if not isinstance(sensor_failures, int) or isinstance(sensor_failures, bool):
             raise ValueError("sensor_failures must be an integer")
-        if not isinstance(backlog_size, int):
+        if not isinstance(backlog_size, int) or isinstance(backlog_size, bool):
             raise ValueError("backlog_size must be an integer")
         if last_successful_sample is not None and not isinstance(
             last_successful_sample,
