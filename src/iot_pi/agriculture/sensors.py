@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from random import Random
-from typing import Any, Sequence
+from typing import Any
 
 from iot_pi.hardware.errors import HardwareUnavailableError
 
