@@ -54,7 +54,7 @@ class HealthSnapshot:
         return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
 
     @classmethod
-    def from_json(cls, payload: str) -> "HealthSnapshot":
+    def from_json(cls, payload: str) -> HealthSnapshot:
         """Parse and validate a serialized health snapshot."""
         raw = json.loads(payload)
         if not isinstance(raw, dict):
@@ -75,7 +75,9 @@ class HealthSnapshot:
             last_successful_sample,
             str,
         ):
-            raise ValueError("last_successful_sample must be an ISO-8601 string or null")
+            raise ValueError(
+                "last_successful_sample must be an ISO-8601 string or null"
+            )
 
         parsed_timestamp = (
             None
