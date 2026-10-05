@@ -6,6 +6,10 @@ from pathlib import Path
 import pytest
 
 from iot_pi.agriculture.rules import IrrigationPolicy
+from iot_pi.agriculture.safety import (
+    IrrigationSafetyConfig,
+    IrrigationSafetyGuard,
+)
 from iot_pi.agriculture.sensors import SequenceSoilMoistureSensor
 from iot_pi.agriculture.service import IrrigationController
 from iot_pi.agriculture.storage import SQLiteAgricultureStore
@@ -146,3 +150,125 @@ def test_store_requires_open_lifecycle(tmp_path: Path) -> None:
     store.open()
     store.close()
     store.close()
+
+
+
+class MutableClock:
+    """Deterministic monotonic clock for controller safety tests."""
+
+    def __init__(self, value: float = 0.0) -> None:
+        self.value = value
+
+    def __call__(self) -> float:
+        return self.value
+
+
+class FailingPublisher:
+    """Telemetry publisher that can simulate a downstream failure."""
+
+    def __init__(self) -> None:
+        self.fail = True
+        self.messages: list[str] = []
+
+    def publish(
+        self,
+        topic: str,
+        payload: str,
+        *,
+        qos: int = 1,
+        retain: bool = False,
+    ) -> None:
+        """Fail or capture one telemetry publication."""
+        if self.fail:
+            raise RuntimeError("telemetry unavailable")
+        self.messages.append(payload)
+
+
+def test_controller_enforces_timeout_cooldown_and_restart(
+    tmp_path: Path,
+) -> None:
+    """The controller should persist safety timeout and cooldown decisions."""
+    clock = MutableClock()
+    pump = FakeDigitalOutput()
+    store = SQLiteAgricultureStore(tmp_path / "agriculture.db")
+    controller = IrrigationController(
+        SequenceSoilMoistureSensor([20.0]),
+        pump,
+        store,
+        policy=IrrigationPolicy(),
+        safety_guard=IrrigationSafetyGuard(
+            IrrigationSafetyConfig(
+                max_run_seconds=10.0,
+                cooldown_seconds=10.0,
+            ),
+            clock=clock,
+        ),
+    )
+
+    controller.open()
+    try:
+        started = controller.evaluate_once()
+        assert started.pump_on is True
+        assert started.reason == "soil_dry"
+
+        clock.value = 10.0
+        stopped = controller.evaluate_once()
+        assert stopped.pump_on is False
+        assert stopped.reason == "safety_max_run_reached"
+
+        clock.value = 15.0
+        blocked = controller.evaluate_once()
+        assert blocked.pump_on is False
+        assert blocked.reason == "safety_cooldown_active"
+
+        clock.value = 20.0
+        restarted = controller.evaluate_once()
+        assert restarted.pump_on is True
+        assert restarted.reason == "soil_dry"
+
+        assert store.count() == 4
+    finally:
+        controller.close()
+
+
+def test_controller_forces_off_and_records_event_on_downstream_error(
+    tmp_path: Path,
+) -> None:
+    """A post-actuation failure should de-energize the pump and start cooldown."""
+    clock = MutableClock()
+    pump = FakeDigitalOutput()
+    publisher = FailingPublisher()
+    events = SQLiteEventRepository(tmp_path / "events.db")
+    controller = IrrigationController(
+        SequenceSoilMoistureSensor([20.0]),
+        pump,
+        SQLiteAgricultureStore(tmp_path / "agriculture.db"),
+        policy=IrrigationPolicy(),
+        events=events,
+        telemetry_publisher=publisher,
+        safety_guard=IrrigationSafetyGuard(
+            IrrigationSafetyConfig(
+                max_run_seconds=60.0,
+                cooldown_seconds=10.0,
+            ),
+            clock=clock,
+        ),
+    )
+
+    controller.open()
+    try:
+        with pytest.raises(RuntimeError, match="telemetry unavailable"):
+            controller.evaluate_once()
+
+        assert pump.read() is False
+        assert events.count() == 2
+
+        publisher.fail = False
+        clock.value = 5.0
+        blocked = controller.evaluate_once()
+
+        assert blocked.pump_on is False
+        assert blocked.reason == "safety_cooldown_active"
+        assert publisher.messages
+    finally:
+        controller.close()

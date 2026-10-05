@@ -6,6 +6,7 @@ from iot_pi.agriculture.rules import (
     IrrigationPolicy,
     IrrigationState,
 )
+from iot_pi.agriculture.safety import IrrigationSafetyConfig, IrrigationSafetyGuard
 from iot_pi.agriculture.service import IrrigationController
 
 __all__ = [
@@ -13,5 +14,7 @@ __all__ = [
     "IrrigationController",
     "IrrigationDecision",
     "IrrigationPolicy",
+    "IrrigationSafetyConfig",
+    "IrrigationSafetyGuard",
     "IrrigationState",
 ]
