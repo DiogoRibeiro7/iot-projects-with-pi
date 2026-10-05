@@ -121,6 +121,6 @@ Recommended deployment behavior:
 - use bounded queues rather than unlimited in-memory growth;
 - do not block safety-critical actuator logic on cloud availability.
 
-The current bridge keeps a failed in-memory batch pending. Durable offline
-spooling can be added later if a deployment requires at-least-once delivery
-across process restarts.
+The bridge can also use a durable SQLite outbox for at-least-once delivery across
+process restarts. See [telemetry-outbox.md](telemetry-outbox.md) for restart,
+acknowledgement, retry-count, and retention semantics.
