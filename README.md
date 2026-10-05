@@ -66,6 +66,8 @@ The roadmap starts with two complete reference applications:
    persistence, telemetry, and simulation support.
 2. **Home automation** — sensor-driven rules, actuator control, manual override,
    and safe failure behaviour.
+3. **Smart agriculture** — soil-moisture-driven irrigation with hysteresis,
+   persistence, observability, simulation, and optional telemetry.
 
 Additional projects should reuse the common package rather than duplicate
 infrastructure code.

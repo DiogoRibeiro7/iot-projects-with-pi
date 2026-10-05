@@ -41,4 +41,5 @@ integration.
 
 - [Weather station](weather_station/README.md)
 - [Home automation](home_automation/README.md)
+- [Smart agriculture](smart_agriculture/README.md)
 - [Reusable project template](_template/README.md)
