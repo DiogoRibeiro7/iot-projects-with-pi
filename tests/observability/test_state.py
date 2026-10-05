@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from iot_pi.messaging.fake import InMemoryPublisher
-from iot_pi.observability.health import HealthSnapshot
+from iot_pi.observability.health import HealthSnapshot, HealthTracker
 from iot_pi.observability.state import (
     CompositeHealthObserver,
     HealthStateFile,
@@ -80,3 +80,18 @@ def test_composite_health_observer_calls_every_sink() -> None:
     observer(snapshot())
 
     assert received == [snapshot(), snapshot()]
+
+
+
+def test_health_tracker_updates_state_file(tmp_path: Path) -> None:
+    """A tracker observer should persist live state after each mutation."""
+    state = HealthStateFile(tmp_path / "health.json")
+    tracker = HealthTracker(observer=state)
+
+    tracker.record_sensor_failure()
+    tracker.set_backlog_size(3)
+
+    persisted = state.read()
+
+    assert persisted.sensor_failures == 1
+    assert persisted.backlog_size == 3
