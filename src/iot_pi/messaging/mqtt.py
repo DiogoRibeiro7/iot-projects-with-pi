@@ -177,7 +177,6 @@ class PahoCommandSubscriber:
             self._client = None
 
 
-
 class PahoOneShotSubscriber:
     """Receive one UTF-8 MQTT payload with a bounded timeout."""
 
