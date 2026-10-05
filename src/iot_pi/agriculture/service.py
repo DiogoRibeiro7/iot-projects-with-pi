@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 
 from iot_pi.agriculture.models import AgricultureObservation
 from iot_pi.agriculture.rules import IrrigationPolicy, IrrigationState
+from iot_pi.agriculture.safety import IrrigationSafetyGuard
 from iot_pi.agriculture.storage import SQLiteAgricultureStore
 from iot_pi.hardware.errors import HardwareError
 from iot_pi.hardware.interfaces import (
@@ -43,6 +44,7 @@ class IrrigationController:
         clock: Clock | None = None,
         telemetry_publisher: MessagePublisher | None = None,
         device_id: str = "agriculture-pi",
+        safety_guard: IrrigationSafetyGuard | None = None,
     ) -> None:
         """Create an irrigation controller."""
         self._soil_sensor = soil_sensor
@@ -56,6 +58,7 @@ class IrrigationController:
         self._clock = clock or (lambda: datetime.now(UTC))
         self._telemetry_publisher = telemetry_publisher
         self._device_id = device_id
+        self._safety_guard = safety_guard or IrrigationSafetyGuard()
 
     def open(self) -> None:
         """Open resources and roll back partial initialization."""
@@ -108,76 +111,90 @@ class IrrigationController:
                                 self._events.close()
 
     def evaluate_once(self) -> AgricultureObservation:
-        """Read sensors, evaluate irrigation rules, persist, and log."""
-        try:
-            soil_moisture = self._soil_sensor.read()
-            climate = (
-                self._climate_sensor.read()
-                if self._climate_sensor is not None
-                else None
-            )
-        except Exception:
-            if self._health is not None:
-                self._health.record_sensor_failure()
-            raise
-
+        """Read sensors, apply irrigation and safety rules, persist, and log."""
         current_state = (
             IrrigationState.ON if self._pump.read() else IrrigationState.OFF
         )
-        decision = self._policy.evaluate(
-            soil_moisture_percent=soil_moisture,
-            current_state=current_state,
-        )
-        pump_on = decision.desired_state is IrrigationState.ON
-        self._pump.write(pump_on)
 
-        observation = AgricultureObservation(
-            timestamp=self._clock(),
-            soil_moisture_percent=soil_moisture,
-            pump_on=pump_on,
-            reason=decision.reason,
-            temperature_c=None if climate is None else climate.temperature_c,
-            relative_humidity_percent=(
-                None if climate is None else climate.relative_humidity_percent
-            ),
-        )
-        self._store.save(observation)
+        try:
+            try:
+                soil_moisture = self._soil_sensor.read()
+                climate = (
+                    self._climate_sensor.read()
+                    if self._climate_sensor is not None
+                    else None
+                )
+            except Exception:
+                if self._health is not None:
+                    self._health.record_sensor_failure()
+                raise
 
-        payload = {
-            "soil_moisture_percent": observation.soil_moisture_percent,
-            "pump_on": observation.pump_on,
-            "reason": observation.reason,
-            "temperature_c": observation.temperature_c,
-            "relative_humidity_percent": observation.relative_humidity_percent,
-        }
-
-        if self._health is not None:
-            self._health.record_success(timestamp=observation.timestamp)
-
-        if self._events is not None:
-            self._events.append(
-                "irrigation_decision",
-                payload,
-                timestamp=observation.timestamp,
+            decision = self._policy.evaluate(
+                soil_moisture_percent=soil_moisture,
+                current_state=current_state,
+            )
+            decision = self._safety_guard.apply(
+                decision,
+                current_state=current_state,
             )
 
-        if self._telemetry_publisher is not None:
-            message = agriculture_telemetry(self._device_id, observation)
-            self._telemetry_publisher.publish(
-                telemetry_topic(self._device_id, "agriculture"),
-                message.to_json(),
-                qos=1,
-                retain=False,
-            )
+            pump_on = decision.desired_state is IrrigationState.ON
+            self._pump.write(pump_on)
 
-        self._logger.info(
-            json.dumps(
-                {
-                    "event": "irrigation_decision",
-                    "timestamp": observation.timestamp.isoformat(),
-                    **payload,
-                },
-                sort_keys=True,
+            observation = AgricultureObservation(
+                timestamp=self._clock(),
+                soil_moisture_percent=soil_moisture,
+                pump_on=pump_on,
+                reason=decision.reason,
+                temperature_c=None if climate is None else climate.temperature_c,
+                relative_humidity_percent=(
+                    None if climate is None else climate.relative_humidity_percent
+                ),
             )
-        )
-        return observation
+            self._store.save(observation)
+
+            payload = {
+                "soil_moisture_percent": observation.soil_moisture_percent,
+                "pump_on": observation.pump_on,
+                "reason": observation.reason,
+                "temperature_c": observation.temperature_c,
+                "relative_humidity_percent": observation.relative_humidity_percent,
+            }
+
+            if self._health is not None:
+                self._health.record_success(timestamp=observation.timestamp)
+
+            if self._events is not None:
+                self._events.append(
+                    "irrigation_decision",
+                    payload,
+                    timestamp=observation.timestamp,
+                )
+
+            if self._telemetry_publisher is not None:
+                message = agriculture_telemetry(self._device_id, observation)
+                self._telemetry_publisher.publish(
+                    telemetry_topic(self._device_id, "agriculture"),
+                    message.to_json(),
+                    qos=1,
+                    retain=False,
+                )
+
+            self._logger.info(
+                json.dumps(
+                    {
+                        "event": "irrigation_decision",
+                        "timestamp": observation.timestamp.isoformat(),
+                        **payload,
+                    },
+                    sort_keys=True,
+                )
+            )
+            return observation
+        except Exception:
+            try:
+                self._pump.write(False)
+            except HardwareError:
+                pass
+            self._safety_guard.record_forced_stop()
+            raise
