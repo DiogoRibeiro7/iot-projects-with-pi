@@ -169,6 +169,12 @@ Validate `poetry.lock` before deployment if `pyproject.toml` changed:
 poetry check --lock
 ```
 
+## Low-resource deployment
+
+For Raspberry Pi Zero 2 W profiling and conservative sampling defaults, see
+[pi-zero-2w.md](pi-zero-2w.md) and
+`deployment/env/low-resource.env.example`.
+
 ## Logging and storage
 
 Use `journalctl` for service-level logs and the repository's rotating JSON

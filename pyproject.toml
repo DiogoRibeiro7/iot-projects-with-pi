@@ -21,6 +21,7 @@ mqtt = ["paho-mqtt"]
 [tool.poetry.scripts]
 iot-weather = "iot_pi.weather.cli:main"
 iot-home = "iot_pi.home.cli:main"
+iot-profile = "iot_pi.profiling.cli:main"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.18.0"
