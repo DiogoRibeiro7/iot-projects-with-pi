@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
+from math import isfinite
 from typing import Any
 
 from iot_pi.hardware.errors import HardwareUnavailableError
@@ -192,8 +193,8 @@ class PahoOneShotSubscriber:
         """Create an unopened one-shot subscriber."""
         if qos not in {0, 1, 2}:
             raise ValueError("qos must be 0, 1, or 2")
-        if timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be greater than zero")
+        if not isfinite(timeout_seconds) or timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be a positive finite number")
 
         self._host = host
         self._port = port
