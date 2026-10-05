@@ -26,12 +26,12 @@ def run_round_trip(
     )
 
     received: list[str] = []
-    failures: list[BaseException] = []
+    failures: list[Exception] = []
 
     def receive() -> None:
         try:
             received.append(subscriber.receive())
-        except BaseException as exc:
+        except Exception as exc:
             failures.append(exc)
 
     thread = threading.Thread(target=receive, daemon=True)
