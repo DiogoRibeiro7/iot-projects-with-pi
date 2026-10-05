@@ -5,6 +5,8 @@ from argparse import ArgumentParser, ArgumentTypeError
 from math import isfinite
 from pathlib import Path
 
+from iot_pi.observability.health import HealthTracker
+from iot_pi.observability.state import HealthStateFile
 from iot_pi.weather.sensors import (
     DhtTemperatureHumiditySensor,
     SimulatedTemperatureHumiditySensor,
@@ -38,6 +40,7 @@ def build_parser() -> ArgumentParser:
     parser.add_argument("--simulation", action="store_true")
     parser.add_argument("--pin", default="D4")
     parser.add_argument("--model", choices=("DHT11", "DHT22"), default="DHT22")
+    parser.add_argument("--health-file", type=Path)
     return parser
 
 
@@ -53,10 +56,16 @@ def main() -> int:
         else DhtTemperatureHumiditySensor(args.pin, model=args.model)
     )
     store = SQLiteWeatherStore(args.database)
+    health = (
+        None
+        if args.health_file is None
+        else HealthTracker(observer=HealthStateFile(args.health_file))
+    )
     station = WeatherStation(
         sensor,
         store,
         sample_interval_seconds=args.interval,
+        health=health,
     )
 
     try:
