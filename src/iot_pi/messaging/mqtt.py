@@ -174,3 +174,74 @@ class PahoCommandSubscriber:
             self._client.loop_stop()
             self._client.disconnect()
             self._client = None
+
+
+
+class PahoOneShotSubscriber:
+    """Receive one UTF-8 MQTT payload with a bounded timeout."""
+
+    def __init__(
+        self,
+        host: str,
+        topic: str,
+        *,
+        port: int = 1883,
+        qos: int = 1,
+        timeout_seconds: float = 5.0,
+    ) -> None:
+        """Create an unopened one-shot subscriber."""
+        if qos not in {0, 1, 2}:
+            raise ValueError("qos must be 0, 1, or 2")
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be greater than zero")
+
+        self._host = host
+        self._port = port
+        self._topic = topic
+        self._qos = qos
+        self._timeout_seconds = timeout_seconds
+
+    def receive(self) -> str:
+        """Connect, subscribe, receive one payload, and disconnect."""
+        try:
+            import paho.mqtt.client as mqtt
+        except ImportError as exc:
+            raise HardwareUnavailableError(
+                "paho-mqtt is unavailable; install the 'mqtt' extra"
+            ) from exc
+
+        from threading import Event
+
+        received = Event()
+        payload: list[str] = []
+
+        callback_api = mqtt.CallbackAPIVersion.VERSION2  # type: ignore[attr-defined]
+        client = mqtt.Client(callback_api)
+
+        def on_message(
+            _client: Any,
+            _userdata: Any,
+            message: Any,
+        ) -> None:
+            payload.append(message.payload.decode("utf-8"))
+            received.set()
+
+        client.on_message = on_message
+        try:
+            client.connect(self._host, self._port)
+            client.subscribe(self._topic, qos=self._qos)
+            client.loop_start()
+
+            if not received.wait(self._timeout_seconds):
+                raise TimeoutError(
+                    f"no MQTT message received within {self._timeout_seconds:g} seconds"
+                )
+
+            return payload[0]
+        except OSError as exc:
+            raise HardwareUnavailableError(
+                "unable to connect MQTT one-shot subscriber"
+            ) from exc
+        finally:
+            client.loop_stop()
+            client.disconnect()
