@@ -20,6 +20,12 @@ class PahoMqttPublisher:
         client_id: str = "",
         connect_retries: int = 3,
         backoff_seconds: float = 1.0,
+        username: str | None = None,
+        password: str | None = None,
+        tls_enabled: bool = False,
+        ca_cert: str | None = None,
+        client_cert: str | None = None,
+        client_key: str | None = None,
     ) -> None:
         """Create an unopened MQTT publisher."""
         if connect_retries <= 0:
@@ -32,6 +38,12 @@ class PahoMqttPublisher:
         self._client_id = client_id
         self._connect_retries = connect_retries
         self._backoff_seconds = backoff_seconds
+        self._username = username
+        self._password = password
+        self._tls_enabled = tls_enabled
+        self._ca_cert = ca_cert
+        self._client_cert = client_cert
+        self._client_key = client_key
         self._client: Any | None = None
 
     def open(self) -> None:
@@ -53,6 +65,14 @@ class PahoMqttPublisher:
                 callback_api,
                 client_id=self._client_id,
             )
+            if self._username is not None:
+                client.username_pw_set(self._username, self._password)
+            if self._tls_enabled:
+                client.tls_set(
+                    ca_certs=self._ca_cert,
+                    certfile=self._client_cert,
+                    keyfile=self._client_key,
+                )
             try:
                 client.connect(self._host, self._port)
                 client.loop_start()
