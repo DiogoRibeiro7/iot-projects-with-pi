@@ -157,9 +157,7 @@ def main() -> int:
     )
     health = HealthTracker(
         observer=(
-            None
-            if args.health_file is None
-            else HealthStateFile(args.health_file)
+            None if args.health_file is None else HealthStateFile(args.health_file)
         )
     )
 
