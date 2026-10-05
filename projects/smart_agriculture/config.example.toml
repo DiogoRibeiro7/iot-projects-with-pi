@@ -1,9 +1,0 @@
-device_id = "agriculture-pi"
-simulation = true
-sample_interval_seconds = 60.0
-dry_on_percent = 30.0
-wet_off_percent = 45.0
-relay_pin = 27
-adc_channel = 0
-dry_raw = 0.8
-wet_raw = 0.3
