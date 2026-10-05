@@ -197,4 +197,34 @@ class IrrigationController:
             except HardwareError:
                 pass
             self._safety_guard.record_forced_stop()
+            self._record_safety_error_stop()
             raise
+
+    def _record_safety_error_stop(self) -> None:
+        """Persist and log an emergency pump shutdown without masking its cause."""
+        try:
+            timestamp = self._clock()
+            payload = {
+                "pump_on": False,
+                "reason": "safety_error_stop",
+            }
+
+            if self._events is not None:
+                self._events.append(
+                    "irrigation_safety_stop",
+                    payload,
+                    timestamp=timestamp,
+                )
+
+            self._logger.error(
+                json.dumps(
+                    {
+                        "event": "irrigation_safety_stop",
+                        "timestamp": timestamp.isoformat(),
+                        **payload,
+                    },
+                    sort_keys=True,
+                )
+            )
+        except Exception:
+            self._logger.exception("unable to record irrigation safety stop")
