@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from random import Random
-from typing import Any
+from typing import Any, cast
 
 from iot_pi.hardware.errors import HardwareUnavailableError
 
@@ -92,7 +92,7 @@ def _load_mcp3008() -> type[Any]:
             "gpiozero MCP3008 support is unavailable; install the 'hardware' extra"
         ) from exc
 
-    return MCP3008
+    return cast(type[Any], MCP3008)
 
 
 class Mcp3008SoilMoistureSensor:
