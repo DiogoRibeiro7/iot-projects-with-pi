@@ -18,6 +18,9 @@ from iot_pi.hardware.interfaces import (
     TemperatureHumiditySensor,
 )
 from iot_pi.observability.health import HealthTracker
+from iot_pi.messaging.agriculture import agriculture_telemetry
+from iot_pi.messaging.interfaces import MessagePublisher
+from iot_pi.messaging.topics import telemetry_topic
 from iot_pi.observability.storage import SQLiteEventRepository
 
 Clock = Callable[[], datetime]
@@ -38,6 +41,8 @@ class IrrigationController:
         events: SQLiteEventRepository | None = None,
         logger: logging.Logger | None = None,
         clock: Clock | None = None,
+        telemetry_publisher: MessagePublisher | None = None,
+        device_id: str = "agriculture-pi",
     ) -> None:
         """Create an irrigation controller."""
         self._soil_sensor = soil_sensor
@@ -49,6 +54,8 @@ class IrrigationController:
         self._events = events
         self._logger = logger or logging.getLogger("iot_pi.agriculture")
         self._clock = clock or (lambda: datetime.now(UTC))
+        self._telemetry_publisher = telemetry_publisher
+        self._device_id = device_id
 
     def open(self) -> None:
         """Open resources and roll back partial initialization."""
@@ -152,6 +159,15 @@ class IrrigationController:
                 "irrigation_decision",
                 payload,
                 timestamp=observation.timestamp,
+            )
+
+        if self._telemetry_publisher is not None:
+            message = agriculture_telemetry(self._device_id, observation)
+            self._telemetry_publisher.publish(
+                telemetry_topic(self._device_id, "agriculture"),
+                message.to_json(),
+                qos=1,
+                retain=False,
             )
 
         self._logger.info(
