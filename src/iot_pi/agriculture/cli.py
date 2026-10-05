@@ -10,6 +10,7 @@ from math import isfinite
 from pathlib import Path
 
 from iot_pi.agriculture.rules import IrrigationPolicy
+from iot_pi.agriculture.safety import IrrigationSafetyConfig, IrrigationSafetyGuard
 from iot_pi.agriculture.sensors import (
     Mcp3008SoilMoistureSensor,
     SequenceSoilMoistureSensor,
@@ -53,6 +54,14 @@ def _percentage(value: str) -> float:
     return parsed
 
 
+def _non_negative_finite_float(value: str) -> float:
+    """Parse a non-negative finite float."""
+    parsed = float(value)
+    if not isfinite(parsed) or parsed < 0:
+        raise ArgumentTypeError("value must be a non-negative finite number")
+    return parsed
+
+
 def build_parser() -> ArgumentParser:
     """Build the agriculture command-line parser."""
     parser = ArgumentParser(description="Run the Raspberry Pi irrigation controller")
@@ -68,6 +77,16 @@ def build_parser() -> ArgumentParser:
     parser.add_argument("--events-database", type=Path)
     parser.add_argument("--dry-on", type=_percentage, default=30.0)
     parser.add_argument("--wet-off", type=_percentage, default=45.0)
+    parser.add_argument(
+        "--max-run-seconds",
+        type=_positive_finite_float,
+        default=300.0,
+    )
+    parser.add_argument(
+        "--cooldown-seconds",
+        type=_non_negative_finite_float,
+        default=60.0,
+    )
     parser.add_argument("--relay-pin", type=int, default=27)
     parser.add_argument("--adc-channel", type=int, default=0)
     parser.add_argument("--dry-raw", type=float, default=0.8)
@@ -143,6 +162,12 @@ def main() -> int:
         policy=IrrigationPolicy(
             dry_on_percent=args.dry_on,
             wet_off_percent=args.wet_off,
+        ),
+        safety_guard=IrrigationSafetyGuard(
+            IrrigationSafetyConfig(
+                max_run_seconds=args.max_run_seconds,
+                cooldown_seconds=args.cooldown_seconds,
+            )
         ),
         climate_sensor=climate_sensor,
         health=health,
