@@ -26,6 +26,7 @@ iot-weather = "iot_pi.weather.cli:main"
 iot-home = "iot_pi.home.cli:main"
 iot-profile = "iot_pi.profiling.cli:main"
 iot-agriculture = "iot_pi.agriculture.cli:main"
+iot-health = "iot_pi.observability.cli:main"
 
 [tool.poetry]
 packages = [{ include = "iot_pi", from = "src" }]

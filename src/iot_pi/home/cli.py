@@ -4,12 +4,15 @@ import logging
 import time
 from argparse import ArgumentParser
 from math import isfinite
+from pathlib import Path
 
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
 from iot_pi.hardware.gpiozero import GpioZeroDigitalInput, GpioZeroRelay
 from iot_pi.hardware.interfaces import DigitalInput, Relay, TemperatureHumiditySensor
 from iot_pi.home.rules import AutomationPolicy
 from iot_pi.home.service import HomeAutomationController, OverrideMode
+from iot_pi.observability.health import HealthTracker
+from iot_pi.observability.state import HealthStateFile
 from iot_pi.weather.sensors import (
     DhtTemperatureHumiditySensor,
     SimulatedTemperatureHumiditySensor,
@@ -33,6 +36,7 @@ def build_parser() -> ArgumentParser:
     )
     parser.add_argument("--continuous", action="store_true")
     parser.add_argument("--interval", type=float, default=5.0)
+    parser.add_argument("--health-file", type=Path)
     return parser
 
 
@@ -54,6 +58,11 @@ def main() -> int:
         motion = GpioZeroDigitalInput(args.motion_pin)
         relay = GpioZeroRelay(args.relay_pin)
 
+    health = (
+        None
+        if args.health_file is None
+        else HealthTracker(observer=HealthStateFile(args.health_file))
+    )
     controller = HomeAutomationController(
         climate,
         motion,
@@ -62,6 +71,7 @@ def main() -> int:
             temperature_on_c=args.temperature_on,
             temperature_off_c=args.temperature_off,
         ),
+        health=health,
     )
     controller.set_override(OverrideMode(args.override))
 

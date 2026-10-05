@@ -23,6 +23,7 @@ from iot_pi.hardware.gpiozero import GpioZeroRelay
 from iot_pi.hardware.interfaces import Relay, TemperatureHumiditySensor
 from iot_pi.messaging.mqtt import PahoMqttPublisher
 from iot_pi.observability.health import HealthTracker
+from iot_pi.observability.state import HealthStateFile
 from iot_pi.observability.storage import SQLiteEventRepository
 from iot_pi.weather.sensors import (
     DhtTemperatureHumiditySensor,
@@ -97,6 +98,7 @@ def build_parser() -> ArgumentParser:
     parser.add_argument("--mqtt-host")
     parser.add_argument("--mqtt-port", type=int, default=1883)
     parser.add_argument("--device-id", default="agriculture-pi")
+    parser.add_argument("--health-file", type=Path)
     return parser
 
 
@@ -153,7 +155,13 @@ def main() -> int:
         if args.events_database is None
         else SQLiteEventRepository(args.events_database)
     )
-    health = HealthTracker()
+    health = HealthTracker(
+        observer=(
+            None
+            if args.health_file is None
+            else HealthStateFile(args.health_file)
+        )
+    )
 
     controller = IrrigationController(
         soil_sensor,

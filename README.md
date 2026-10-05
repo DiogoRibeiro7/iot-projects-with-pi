@@ -80,6 +80,13 @@ and follow the [project documentation standard](docs/project-standard.md).
 See [docs/architecture.md](docs/architecture.md) for the repository boundaries
 and design principles.
 
+## Runtime health
+
+Services can persist a stable health snapshot with `--health-file`. Inspect or
+publish that state with `iot-health`.
+
+See [docs/observability.md](docs/observability.md).
+
 ## Cloud telemetry
 
 Optional cloud forwarding is documented in
