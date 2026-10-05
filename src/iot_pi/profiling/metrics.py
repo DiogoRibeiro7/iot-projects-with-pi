@@ -65,8 +65,8 @@ def _windows_rss_bytes() -> int | None:
             ("PeakPagefileUsage", ctypes.c_size_t),
         ]
 
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    psapi = ctypes.WinDLL("psapi", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
+    psapi = ctypes.WinDLL("psapi", use_last_error=True)  # type: ignore[attr-defined]
 
     counters = ProcessMemoryCounters()
     counters.cb = ctypes.sizeof(ProcessMemoryCounters)
