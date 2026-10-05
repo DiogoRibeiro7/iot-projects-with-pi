@@ -18,6 +18,7 @@ MCP3008 ADC or simulator
 IrrigationController
         |
         +--> IrrigationPolicy with hysteresis
+        +--> IrrigationSafetyGuard
         +--> relay / low-voltage pump
         +--> SQLite observations
         +--> health + operational events
@@ -117,6 +118,8 @@ Important CLI options:
 | --- | --- | --- |
 | `--dry-on` | Moisture % at/below which irrigation starts | `30` |
 | `--wet-off` | Moisture % at/above which irrigation stops | `45` |
+| `--max-run-seconds` | Maximum continuous pump-on duration | `300` |
+| `--cooldown-seconds` | Minimum off time before restart | `60` |
 | `--relay-pin` | BCM GPIO controlling the relay | `27` |
 | `--adc-channel` | MCP3008 channel | `0` |
 | `--dry-raw` | ADC value measured in dry calibration | `0.8` |
@@ -130,6 +133,10 @@ Important CLI options:
 
 The dry threshold must remain below the wet threshold. This hysteresis prevents
 rapid relay switching around one moisture boundary.
+
+The actuator safety guard independently limits continuous runtime and enforces a
+minimum cooldown before the pump can restart. These limits apply even when soil
+remains dry.
 
 ### Soil sensor calibration
 
@@ -165,6 +172,8 @@ poetry run iot-agriculture \
   --relay-pin 27 \
   --dry-raw 0.80 \
   --wet-raw 0.30 \
+  --max-run-seconds 300 \
+  --cooldown-seconds 60 \
   --samples 1000 \
   --interval 60
 ```
@@ -236,6 +245,15 @@ The default design assumes an isolated **low-voltage** pump or valve circuit.
 The controller forces the relay off during startup and shutdown. It also rolls
 back already-opened resources when initialization fails.
 
+By default, the pump may run continuously for at most **300 seconds**, followed
+by at least **60 seconds** off before it may restart. A maximum-run stop is
+persisted/logged with reason `safety_max_run_reached`; a blocked restart uses
+`safety_cooldown_active`.
+
+If an evaluation fails after or during actuation, the controller immediately
+attempts to de-energize the relay, records `safety_error_stop` as an
+operational event, and starts the cooldown interval.
+
 Do not:
 
 - drive a pump directly from a GPIO pin;
@@ -250,9 +268,10 @@ person.
 ## Limitations and next steps
 
 - physical MCP3008 calibration is installation-specific;
-- durable offline MQTT/cloud spooling is not yet part of this project;
-- irrigation duration is currently controlled by repeated evaluations rather than
-  a dedicated maximum-run timer;
+- durable offline MQTT/cloud spooling is available through the repository cloud
+  outbox, but is not wired into this CLI by default;
+- the safety guard limits continuous runtime but does not replace electrical
+  over-current, dry-run, or flow protection;
 - rainfall forecasts and evapotranspiration models are outside the current scope.
 
 ## Deployment
