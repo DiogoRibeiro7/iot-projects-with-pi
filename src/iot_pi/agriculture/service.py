@@ -112,11 +112,11 @@ class IrrigationController:
 
     def evaluate_once(self) -> AgricultureObservation:
         """Read sensors, apply irrigation and safety rules, persist, and log."""
-        current_state = (
-            IrrigationState.ON if self._pump.read() else IrrigationState.OFF
-        )
-
         try:
+            current_state = (
+                IrrigationState.ON if self._pump.read() else IrrigationState.OFF
+            )
+
             try:
                 soil_moisture = self._soil_sensor.read()
                 climate = (
