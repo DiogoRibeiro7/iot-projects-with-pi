@@ -1,0 +1,56 @@
+site_name: IoT Projects with Raspberry Pi
+site_description: Reusable Raspberry Pi IoT building blocks and reference projects
+site_url: https://diogoribeiro7.github.io/iot-projects-with-pi/
+repo_url: https://github.com/DiogoRibeiro7/iot-projects-with-pi
+repo_name: DiogoRibeiro7/iot-projects-with-pi
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - Overview: architecture.md
+      - Hardware abstraction: hardware.md
+      - Project standard: project-standard.md
+  - Projects:
+      - Catalogue: projects/index.md
+      - Weather station: projects/weather-station.md
+      - Home automation: projects/home-automation.md
+      - Smart agriculture: projects/smart-agriculture.md
+  - Messaging:
+      - MQTT: mqtt.md
+      - Cloud telemetry: cloud-telemetry.md
+      - Durable telemetry outbox: telemetry-outbox.md
+  - Operations:
+      - Observability and health: observability.md
+      - Irrigation safety: irrigation-safety.md
+      - Raspberry Pi Zero 2 W: pi-zero-2w.md
+      - Deployment: deployment.md
+      - Continuous integration: ci.md
