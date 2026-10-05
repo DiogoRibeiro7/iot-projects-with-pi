@@ -20,7 +20,7 @@ from iot_pi.agriculture.service import IrrigationController
 from iot_pi.agriculture.storage import SQLiteAgricultureStore
 from iot_pi.hardware.fake import FakeDigitalOutput
 from iot_pi.hardware.gpiozero import GpioZeroRelay
-from iot_pi.hardware.interfaces import Relay, TemperatureHumiditySensor
+from iot_pi.hardware.interfaces import AnalogSensor, Relay, TemperatureHumiditySensor
 from iot_pi.messaging.mqtt import PahoMqttPublisher
 from iot_pi.observability.health import HealthTracker
 from iot_pi.observability.state import HealthStateFile
@@ -117,6 +117,8 @@ def main() -> int:
     """Run the smart-agriculture reference application."""
     args = build_parser().parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    soil_sensor: AnalogSensor
 
     if args.simulation:
         soil_sensor = (
