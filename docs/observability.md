@@ -33,8 +33,76 @@ unbounded local growth.
 - last successful sample time;
 - current queue/backlog size.
 
-The tracker has no HTTP, MQTT, or dashboard dependency. A later transport can
-publish the resulting snapshot without changing application services.
+`HealthSnapshot` has a stable JSON schema:
+
+```json
+{
+  "backlog_size": 4,
+  "last_successful_sample": "2026-10-05T20:00:00+00:00",
+  "sensor_failures": 1,
+  "uptime_seconds": 123.4
+}
+```
+
+A missing successful sample is represented as `null`.
+
+### Persisting live health
+
+The weather, home-automation, and smart-agriculture CLIs accept
+`--health-file`. When configured, health mutations are written atomically to
+that JSON file.
+
+Example:
+
+```bash
+poetry run iot-weather \
+  --simulation \
+  --samples 5 \
+  --health-file data/weather-health.json
+```
+
+The state file is intentionally opt-in so existing deployments do not gain a new
+write path unexpectedly.
+
+### Inspecting health locally
+
+Print the same stable JSON schema with:
+
+```bash
+poetry run iot-health --file data/weather-health.json
+```
+
+The command reads persisted state. It does not create a second health tracker or
+infer state by parsing logs.
+
+### Publishing retained MQTT health state
+
+Install the MQTT extra:
+
+```bash
+poetry install -E mqtt
+```
+
+Then publish the persisted snapshot:
+
+```bash
+poetry run iot-health \
+  --file data/weather-health.json \
+  --mqtt-host 127.0.0.1 \
+  --device-id weather-pi-01
+```
+
+The command publishes the snapshot with `retain=true` to:
+
+```text
+iot/<device-id>/state/health
+```
+
+A newly connected subscriber can therefore receive the latest known health
+state immediately.
+
+MQTT publishing is deliberately separated from the service's synchronous health
+tracking path. A broker outage cannot stop sensor sampling or actuator control.
 
 ## Generic event persistence
 
