@@ -185,9 +185,7 @@ class SQLiteTelemetryOutbox:
     def count(self) -> int:
         """Return the number of pending telemetry records."""
         connection = self._require_connection()
-        row = connection.execute(
-            "SELECT COUNT(*) FROM telemetry_outbox"
-        ).fetchone()
+        row = connection.execute("SELECT COUNT(*) FROM telemetry_outbox").fetchone()
         return 0 if row is None else int(row[0])
 
     def prune_older_than(
