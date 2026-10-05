@@ -82,7 +82,6 @@ def test_composite_health_observer_calls_every_sink() -> None:
     assert received == [snapshot(), snapshot()]
 
 
-
 def test_health_tracker_updates_state_file(tmp_path: Path) -> None:
     """A tracker observer should persist live state after each mutation."""
     state = HealthStateFile(tmp_path / "health.json")

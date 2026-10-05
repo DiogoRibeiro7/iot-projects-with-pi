@@ -152,7 +152,6 @@ def test_store_requires_open_lifecycle(tmp_path: Path) -> None:
     store.close()
 
 
-
 class MutableClock:
     """Deterministic monotonic clock for controller safety tests."""
 

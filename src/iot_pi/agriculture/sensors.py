@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from random import Random
-from typing import Any
+from typing import Any, cast
 
 from iot_pi.hardware.errors import HardwareUnavailableError
 
@@ -92,7 +92,7 @@ def _load_mcp3008() -> type[Any]:
             "gpiozero MCP3008 support is unavailable; install the 'hardware' extra"
         ) from exc
 
-    return MCP3008
+    return cast(type[Any], MCP3008)
 
 
 class Mcp3008SoilMoistureSensor:
@@ -141,7 +141,5 @@ class Mcp3008SoilMoistureSensor:
             raise HardwareUnavailableError("MCP3008 soil sensor is not open")
 
         raw = float(self._device.value)
-        moisture = 100.0 * (raw - self._dry_raw) / (
-            self._wet_raw - self._dry_raw
-        )
+        moisture = 100.0 * (raw - self._dry_raw) / (self._wet_raw - self._dry_raw)
         return round(min(100.0, max(0.0, moisture)), 2)

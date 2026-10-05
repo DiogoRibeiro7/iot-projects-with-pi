@@ -63,3 +63,22 @@ mkdocs build --strict
 The pull-request CI validates the site build. A separate `Documentation`
 workflow publishes the generated site to GitHub Pages after documentation changes
 land on `main`.
+
+
+## Integration smoke tests
+
+The fast `CI` workflow remains focused on linting, typing, unit/integration tests,
+coverage, package build, and documentation build.
+
+A separate `Smoke` workflow validates external runtime boundaries:
+
+1. starts a real Eclipse Mosquitto broker in Docker;
+2. installs the repository with the optional MQTT dependency;
+3. runs `scripts/mqtt_smoke.py` using the repository's Paho publisher and
+   one-shot subscriber;
+4. builds the production Docker image;
+5. starts that image in its default weather-station simulation mode.
+
+This smoke workflow requires no Raspberry Pi GPIO hardware. It validates the
+network/container boundary while the normal test suite continues to use fake and
+simulated hardware for speed and determinism.

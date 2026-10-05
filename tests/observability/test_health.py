@@ -40,7 +40,6 @@ def test_health_tracker_rejects_naive_timestamp() -> None:
         tracker.record_success(timestamp=datetime(2026, 10, 1, 12, 0))
 
 
-
 def test_health_snapshot_round_trips_json() -> None:
     """The stable health schema should round-trip through JSON."""
     original = HealthSnapshot(

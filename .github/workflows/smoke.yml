@@ -1,0 +1,75 @@
+name: Smoke
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    name: MQTT and container smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python and Poetry
+        uses: DiogoRibeiro7/git-actions-collection/.github/actions/setup-poetry@v1.4.0
+        with:
+          python-version: "3.12"
+          install-deps: "false"
+
+      - name: Install MQTT test dependencies
+        run: poetry install -E mqtt
+
+      - name: Start Mosquitto
+        run: |
+          docker run --detach \
+            --name mqtt-smoke \
+            --publish 1883:1883 \
+            --volume "$PWD/deployment/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro" \
+            eclipse-mosquitto:2
+
+      - name: Wait for Mosquitto
+        run: |
+          python - <<'PY'
+          import socket
+          import time
+
+          deadline = time.monotonic() + 15.0
+          while time.monotonic() < deadline:
+              try:
+                  with socket.create_connection(("127.0.0.1", 1883), timeout=1.0):
+                      break
+              except OSError:
+                  time.sleep(0.25)
+          else:
+              raise SystemExit("Mosquitto did not become ready")
+          PY
+
+      - name: Run MQTT round trip
+        run: poetry run python scripts/mqtt_smoke.py
+
+      - name: Build production image
+        run: docker build --tag iot-projects-with-pi:smoke .
+
+      - name: Run production image in simulation
+        run: docker run --rm iot-projects-with-pi:smoke
+
+      - name: Show Mosquitto logs on failure
+        if: failure()
+        run: docker logs mqtt-smoke || true
+
+      - name: Stop Mosquitto
+        if: always()
+        run: docker rm --force mqtt-smoke || true

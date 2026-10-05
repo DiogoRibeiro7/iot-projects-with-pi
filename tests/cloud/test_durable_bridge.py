@@ -118,6 +118,7 @@ def test_durable_bridge_open_rolls_back_outbox_when_sink_fails(
     tmp_path: Path,
 ) -> None:
     """A sink initialization failure should not leave the outbox connection open."""
+
     class FailingOpenSink(CapturingSink):
         def open(self) -> None:
             raise RuntimeError("sink init failed")

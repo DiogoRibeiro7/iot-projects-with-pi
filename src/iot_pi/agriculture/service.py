@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Callable
+from contextlib import suppress
 from datetime import UTC, datetime
 
 from iot_pi.agriculture.models import AgricultureObservation
@@ -90,9 +91,8 @@ class IrrigationController:
     def close(self) -> None:
         """De-energize the pump and release all resources."""
         try:
-            self._pump.write(False)
-        except HardwareError:
-            pass
+            with suppress(HardwareError):
+                self._pump.write(False)
         finally:
             try:
                 self._pump.close()
@@ -192,10 +192,8 @@ class IrrigationController:
             )
             return observation
         except Exception:
-            try:
+            with suppress(HardwareError):
                 self._pump.write(False)
-            except HardwareError:
-                pass
             self._safety_guard.record_forced_stop()
             self._record_safety_error_stop()
             raise

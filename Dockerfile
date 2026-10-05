@@ -31,6 +31,7 @@ WORKDIR /app
 RUN useradd --create-home --uid 10001 iot
 
 COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/src /app/src
 
 RUN mkdir -p /app/data \
     && chown -R iot:iot /app/data
