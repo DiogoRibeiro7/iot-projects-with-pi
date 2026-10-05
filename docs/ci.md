@@ -41,3 +41,25 @@ explicit in this repository so failures are easy to diagnose.
 The coverage threshold is configured in `pyproject.toml`. CI should not lower
 that threshold to make a pull request pass; missing tests should be added
 instead.
+
+
+## Documentation
+
+Documentation uses MkDocs Material with dependencies isolated from the runtime
+package.
+
+Install the docs dependencies:
+
+```bash
+python -m pip install -r requirements-docs.txt
+```
+
+Build locally with the same strict mode used in CI:
+
+```bash
+mkdocs build --strict
+```
+
+The pull-request CI validates the site build. A separate `Documentation`
+workflow publishes the generated site to GitHub Pages after documentation changes
+land on `main`.
