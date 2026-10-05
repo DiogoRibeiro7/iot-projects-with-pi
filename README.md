@@ -78,6 +78,12 @@ and follow the [project documentation standard](docs/project-standard.md).
 See [docs/architecture.md](docs/architecture.md) for the repository boundaries
 and design principles.
 
+## Cloud telemetry
+
+Optional cloud forwarding is documented in
+[docs/cloud-telemetry.md](docs/cloud-telemetry.md). Application logic remains
+vendor-neutral and local operation does not require cloud dependencies.
+
 ## Raspberry Pi Zero 2 W
 
 For constrained-device profiling and low-resource settings, see
