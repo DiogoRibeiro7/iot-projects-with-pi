@@ -1093,5 +1093,5 @@ mqtt = ["paho-mqtt"]
 
 [metadata]
 lock-version = "2.1"
-python-versions = "^3.12"
-content-hash = "eaa69e9d94a25c37dbdd9f8664d634e0f6a2b81ac483771ad7786725837d608c"
+python-versions = ">=3.12,<4.0"
+content-hash = "c3b88191e685d72e2c9da869df30f0d184e70691470dd4e4b92ff0bf6240d884"
