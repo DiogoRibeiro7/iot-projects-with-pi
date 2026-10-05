@@ -17,10 +17,10 @@ from iot_pi.hardware.interfaces import (
     Relay,
     TemperatureHumiditySensor,
 )
-from iot_pi.observability.health import HealthTracker
 from iot_pi.messaging.agriculture import agriculture_telemetry
 from iot_pi.messaging.interfaces import MessagePublisher
 from iot_pi.messaging.topics import telemetry_topic
+from iot_pi.observability.health import HealthTracker
 from iot_pi.observability.storage import SQLiteEventRepository
 
 Clock = Callable[[], datetime]
