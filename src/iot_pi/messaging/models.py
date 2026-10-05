@@ -21,6 +21,38 @@ class TelemetryMessage:
         payload["timestamp"] = self.timestamp.astimezone(UTC).isoformat()
         return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
+    @classmethod
+    def from_json(cls, payload: str) -> "TelemetryMessage":
+        """Parse and validate a serialized telemetry envelope."""
+        raw = json.loads(payload)
+        if not isinstance(raw, dict):
+            raise ValueError("telemetry payload must be a JSON object")
+
+        device_id = raw.get("device_id")
+        event = raw.get("event")
+        timestamp = raw.get("timestamp")
+        data = raw.get("data")
+
+        if not isinstance(device_id, str) or not device_id.strip():
+            raise ValueError("device_id must be a non-empty string")
+        if not isinstance(event, str) or not event.strip():
+            raise ValueError("event must be a non-empty string")
+        if not isinstance(timestamp, str):
+            raise ValueError("timestamp must be an ISO-8601 string")
+        if not isinstance(data, dict):
+            raise ValueError("data must be a JSON object")
+
+        parsed = datetime.fromisoformat(timestamp)
+        if parsed.tzinfo is None:
+            raise ValueError("timestamp must include a timezone")
+
+        return cls(
+            device_id=device_id,
+            event=event,
+            timestamp=parsed,
+            data=data,
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class CommandMessage:
