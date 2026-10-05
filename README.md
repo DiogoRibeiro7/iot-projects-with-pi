@@ -78,6 +78,11 @@ and follow the [project documentation standard](docs/project-standard.md).
 See [docs/architecture.md](docs/architecture.md) for the repository boundaries
 and design principles.
 
+## Raspberry Pi Zero 2 W
+
+For constrained-device profiling and low-resource settings, see
+[docs/pi-zero-2w.md](docs/pi-zero-2w.md).
+
 ## Deployment
 
 For Raspberry Pi deployment, use the native `systemd` path by default. An
