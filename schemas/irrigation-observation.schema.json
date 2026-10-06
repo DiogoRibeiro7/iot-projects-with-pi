@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://diogoribeiro7.github.io/iot-projects-with-pi/schemas/irrigation-observation.schema.json",
+  "title": "Irrigation observation telemetry",
+  "allOf": [
+    {"$ref": "telemetry-envelope.schema.json"},
+    {
+      "properties": {
+        "event": {"const": "irrigation_observation"},
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["soil_moisture_percent", "pump_on", "reason", "temperature_c", "relative_humidity_percent"],
+          "properties": {
+            "soil_moisture_percent": {"type": "number"},
+            "pump_on": {"type": "boolean"},
+            "reason": {"type": "string"},
+            "temperature_c": {"type": ["number", "null"]},
+            "relative_humidity_percent": {"type": ["number", "null"]}
+          }
+        }
+      }
+    }
+  ]
+}
