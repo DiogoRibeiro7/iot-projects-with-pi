@@ -165,5 +165,3 @@ def main() -> int:
     print(f"validated {wheel.name}")
     print(f"validated {sdist.name}")
     return 0
-
-
