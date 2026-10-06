@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           python_executable="$(poetry env info --executable)"
-          cyclonedx-py environment             --pyproject pyproject.toml             --output-reproducible             --output-format JSON             --output-file security-evidence/sbom.cdx.json             "$python_executable"
+          cyclonedx-py environment             --output-reproducible             --output-format JSON             --output-file security-evidence/sbom.cdx.json             "$python_executable"
 
       - name: Capture installed dependency set
         shell: bash
