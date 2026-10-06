@@ -82,3 +82,22 @@ A separate `Smoke` workflow validates external runtime boundaries:
 This smoke workflow requires no Raspberry Pi GPIO hardware. It validates the
 network/container boundary while the normal test suite continues to use fake and
 simulated hardware for speed and determinism.
+
+
+## Security evidence
+
+A separate `Security Evidence` workflow generates supply-chain artifacts
+without changing the Raspberry Pi runtime dependency graph.
+
+It produces:
+
+- a reproducible CycloneDX JSON SBOM;
+- the exact installed dependency set;
+- a JSON `pip-audit` vulnerability report;
+- the audit exit code.
+
+Known-vulnerability findings are currently non-blocking and surface as workflow
+warnings. Tooling failures remain blocking.
+
+See [security-evidence.md](security-evidence.md) for the review and
+false-positive policy.
