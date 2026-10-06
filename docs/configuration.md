@@ -87,3 +87,23 @@ values fail before the application service starts.
 
 Hardware-free normalized configuration inspection is tracked separately in the
 configuration validation workstream.
+
+
+## Durable telemetry settings
+
+Weather and smart agriculture support these optional fields:
+
+| Field | Meaning | Default |
+| --- | --- | --- |
+| `mqtt_host` | MQTT/cloud broker hostname | unset |
+| `mqtt_port` | Broker port | `1883` |
+| `telemetry_outbox_database` | SQLite durable queue path | unset |
+| `telemetry_batch_size` | Maximum delivery batch | `10` |
+| `telemetry_max_retries` | Retries during startup/backlog drain | `3` |
+| `telemetry_backoff_seconds` | Base exponential backoff | `1.0` |
+| `telemetry_tls_enabled` | Enable MQTT TLS | `false` |
+| `telemetry_topic_prefix` | MQTT topic root | `iot` |
+
+Setting an outbox database requires `mqtt_host`. Without an outbox database,
+smart agriculture retains its existing direct MQTT publishing mode; weather
+remains local-only unless durable telemetry is enabled.

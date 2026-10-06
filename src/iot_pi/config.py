@@ -42,6 +42,14 @@ class WeatherConfig:
     pin: str = "D4"
     model: str = "DHT22"
     health_file: str | None = None
+    mqtt_host: str | None = None
+    mqtt_port: int = 1883
+    telemetry_outbox_database: str | None = None
+    telemetry_batch_size: int = 10
+    telemetry_max_retries: int = 3
+    telemetry_backoff_seconds: float = 1.0
+    telemetry_tls_enabled: bool = False
+    telemetry_topic_prefix: str = "iot"
 
     def __post_init__(self) -> None:
         """Validate weather configuration."""
@@ -58,6 +66,15 @@ class WeatherConfig:
             raise ValueError("database must not be empty")
         if not self.pin.strip():
             raise ValueError("pin must not be empty")
+        _validate_telemetry_settings(
+            mqtt_host=self.mqtt_host,
+            mqtt_port=self.mqtt_port,
+            outbox_database=self.telemetry_outbox_database,
+            batch_size=self.telemetry_batch_size,
+            max_retries=self.telemetry_max_retries,
+            backoff_seconds=self.telemetry_backoff_seconds,
+            topic_prefix=self.telemetry_topic_prefix,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +134,12 @@ class AgricultureConfig:
     mqtt_host: str | None = None
     mqtt_port: int = 1883
     health_file: str | None = None
+    telemetry_outbox_database: str | None = None
+    telemetry_batch_size: int = 10
+    telemetry_max_retries: int = 3
+    telemetry_backoff_seconds: float = 1.0
+    telemetry_tls_enabled: bool = False
+    telemetry_topic_prefix: str = "iot"
 
     def __post_init__(self) -> None:
         """Validate agriculture configuration."""
@@ -139,8 +162,40 @@ class AgricultureConfig:
             raise ValueError("adc_channel must be between 0 and 7")
         if self.dht_model not in {"DHT11", "DHT22"}:
             raise ValueError("dht_model must be DHT11 or DHT22")
-        if self.mqtt_port <= 0 or self.mqtt_port > 65535:
-            raise ValueError("mqtt_port must be between 1 and 65535")
+        _validate_telemetry_settings(
+            mqtt_host=self.mqtt_host,
+            mqtt_port=self.mqtt_port,
+            outbox_database=self.telemetry_outbox_database,
+            batch_size=self.telemetry_batch_size,
+            max_retries=self.telemetry_max_retries,
+            backoff_seconds=self.telemetry_backoff_seconds,
+            topic_prefix=self.telemetry_topic_prefix,
+        )
+
+
+def _validate_telemetry_settings(
+    *,
+    mqtt_host: str | None,
+    mqtt_port: int,
+    outbox_database: str | None,
+    batch_size: int,
+    max_retries: int,
+    backoff_seconds: float,
+    topic_prefix: str,
+) -> None:
+    """Validate shared optional durable telemetry settings."""
+    if mqtt_port <= 0 or mqtt_port > 65535:
+        raise ValueError("mqtt_port must be between 1 and 65535")
+    if outbox_database is not None and not mqtt_host:
+        raise ValueError("mqtt_host is required when telemetry outbox is enabled")
+    if batch_size <= 0:
+        raise ValueError("telemetry_batch_size must be greater than zero")
+    if max_retries <= 0:
+        raise ValueError("telemetry_max_retries must be greater than zero")
+    if not isfinite(backoff_seconds) or backoff_seconds <= 0:
+        raise ValueError("telemetry_backoff_seconds must be a positive finite number")
+    if not topic_prefix.strip("/"):
+        raise ValueError("telemetry_topic_prefix must not be empty")
 
 
 def load_config[TConfig](

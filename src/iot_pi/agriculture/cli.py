@@ -17,6 +17,10 @@ from iot_pi.agriculture.sensors import (
 )
 from iot_pi.agriculture.service import IrrigationController
 from iot_pi.agriculture.storage import SQLiteAgricultureStore
+from iot_pi.cloud.runtime import (
+    DurableTelemetryRuntime,
+    build_mqtt_durable_runtime,
+)
 from iot_pi.config import AgricultureConfig, load_config
 from iot_pi.hardware.fake import FakeDigitalOutput
 from iot_pi.hardware.gpiozero import GpioZeroRelay
@@ -64,6 +68,16 @@ def build_parser() -> ArgumentParser:
     parser.add_argument("--mqtt-host")
     parser.add_argument("--mqtt-port", type=int)
     parser.add_argument("--health-file")
+    parser.add_argument("--telemetry-outbox")
+    parser.add_argument("--telemetry-batch-size", type=int)
+    parser.add_argument("--telemetry-max-retries", type=int)
+    parser.add_argument("--telemetry-backoff-seconds", type=float)
+    parser.add_argument(
+        "--telemetry-tls",
+        action=BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument("--telemetry-topic-prefix")
     return parser
 
 
@@ -107,6 +121,12 @@ def main() -> int:
             "mqtt_host": args.mqtt_host,
             "mqtt_port": args.mqtt_port,
             "health_file": args.health_file,
+            "telemetry_outbox_database": args.telemetry_outbox,
+            "telemetry_batch_size": args.telemetry_batch_size,
+            "telemetry_max_retries": args.telemetry_max_retries,
+            "telemetry_backoff_seconds": args.telemetry_backoff_seconds,
+            "telemetry_tls_enabled": args.telemetry_tls,
+            "telemetry_topic_prefix": args.telemetry_topic_prefix,
         },
     )
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -138,14 +158,6 @@ def main() -> int:
             )
         )
 
-    telemetry_publisher: PahoMqttPublisher | None = None
-    if config.mqtt_host:
-        telemetry_publisher = PahoMqttPublisher(
-            config.mqtt_host,
-            port=config.mqtt_port,
-            client_id=config.device_id,
-        )
-
     store = SQLiteAgricultureStore(Path(config.database))
     events = (
         None
@@ -160,6 +172,28 @@ def main() -> int:
         )
     )
 
+    telemetry_runtime: DurableTelemetryRuntime | None = None
+    telemetry_publisher: PahoMqttPublisher | None = None
+    if config.telemetry_outbox_database is not None:
+        assert config.mqtt_host is not None
+        telemetry_runtime = build_mqtt_durable_runtime(
+            host=config.mqtt_host,
+            port=config.mqtt_port,
+            device_id=config.device_id,
+            outbox_path=Path(config.telemetry_outbox_database),
+            batch_size=config.telemetry_batch_size,
+            max_retries=config.telemetry_max_retries,
+            backoff_seconds=config.telemetry_backoff_seconds,
+            tls_enabled=config.telemetry_tls_enabled,
+            topic_prefix=config.telemetry_topic_prefix,
+            health=health,
+        )
+    elif config.mqtt_host:
+        telemetry_publisher = PahoMqttPublisher(
+            config.mqtt_host,
+            port=config.mqtt_port,
+            client_id=config.device_id,
+        )
     controller = IrrigationController(
         soil_sensor,
         pump,
@@ -178,10 +212,13 @@ def main() -> int:
         health=health,
         events=events,
         telemetry_publisher=telemetry_publisher,
+        telemetry_runtime=telemetry_runtime,
         device_id=config.device_id,
     )
 
-    if telemetry_publisher is not None:
+    if telemetry_runtime is not None:
+        telemetry_runtime.open()
+    elif telemetry_publisher is not None:
         telemetry_publisher.open()
 
     try:
@@ -192,7 +229,9 @@ def main() -> int:
                 time.sleep(config.sample_interval_seconds)
     finally:
         controller.close()
-        if telemetry_publisher is not None:
+        if telemetry_runtime is not None:
+            telemetry_runtime.close()
+        elif telemetry_publisher is not None:
             telemetry_publisher.close()
 
     return 0

@@ -92,3 +92,53 @@ removed by an older batch acknowledgement.
 The outbox stores transport-neutral telemetry envelopes. The same persisted rows
 can therefore be replayed through any compatible `CloudTelemetrySink`, not only
 MQTT.
+
+
+## Runnable applications
+
+Weather and smart agriculture can enable the durable outbox directly through
+their shared runtime configuration.
+
+Example weather configuration:
+
+```toml
+mqtt_host = "127.0.0.1"
+mqtt_port = 1883
+telemetry_outbox_database = "/var/lib/iot-projects-with-pi/weather-outbox.db"
+telemetry_batch_size = 10
+telemetry_max_retries = 3
+telemetry_backoff_seconds = 1.0
+telemetry_tls_enabled = false
+telemetry_topic_prefix = "iot"
+```
+
+The same fields are available under the `IOT_WEATHER_` and
+`IOT_AGRICULTURE_` environment prefixes and as explicit CLI options.
+
+## Offline startup
+
+When a durable outbox is configured, the SQLite queue opens even if the MQTT
+broker is unavailable. The application can therefore continue collecting local
+observations and enqueueing telemetry while offline.
+
+Each normal runtime cycle:
+
+1. persists the typed telemetry envelope to SQLite;
+2. updates `HealthTracker.backlog_size`;
+3. makes one best-effort delivery attempt;
+4. leaves the row pending if the broker is still unavailable.
+
+Network errors from that best-effort attempt are not propagated into the
+weather or irrigation control flow.
+
+## Reconnect and restart
+
+At startup, if the broker is reachable, the runtime drains the oldest persisted
+outbox rows using the configured batch/retry policy before normal acquisition.
+
+If the process restarts while offline, pending rows remain in SQLite. A later
+restart with the broker available replays and acknowledges them.
+
+For smart agriculture, durable delivery is separate from actuator safety:
+broker failure cannot trigger a pump safety stop. Local persistence failures
+remain visible because the telemetry record could not be made durable.
