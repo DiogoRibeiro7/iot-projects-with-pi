@@ -5,7 +5,7 @@ import time
 from argparse import ArgumentParser, BooleanOptionalAction
 from pathlib import Path
 
-from iot_pi.config import HomeConfig, load_config
+from iot_pi.config import HomeConfig, format_config, load_config
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
 from iot_pi.hardware.gpiozero import GpioZeroDigitalInput, GpioZeroRelay
 from iot_pi.hardware.interfaces import DigitalInput, Relay, TemperatureHumiditySensor
@@ -23,6 +23,11 @@ def build_parser() -> ArgumentParser:
     """Build the CLI parser."""
     parser = ArgumentParser(description="Run the Raspberry Pi home automation demo")
     parser.add_argument("--config", type=Path)
+    parser.add_argument(
+        "--check-config",
+        action="store_true",
+        help="validate and print the effective configuration without opening hardware",
+    )
     parser.add_argument("--device-id")
     parser.add_argument(
         "--simulation",
@@ -68,6 +73,10 @@ def main() -> int:
             "health_file": args.health_file,
         },
     )
+    if args.check_config:
+        print(format_config(config))
+        return 0
+
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     climate: TemperatureHumiditySensor
