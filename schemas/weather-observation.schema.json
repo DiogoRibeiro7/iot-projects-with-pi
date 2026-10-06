@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://diogoribeiro7.github.io/iot-projects-with-pi/schemas/weather-observation.schema.json",
+  "title": "Weather observation telemetry",
+  "allOf": [
+    {"$ref": "telemetry-envelope.schema.json"},
+    {
+      "properties": {
+        "event": {"const": "weather_observation"},
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["temperature_c", "relative_humidity_percent", "pressure_hpa"],
+          "properties": {
+            "temperature_c": {"type": "number"},
+            "relative_humidity_percent": {"type": "number"},
+            "pressure_hpa": {"type": ["number", "null"]}
+          }
+        }
+      }
+    }
+  ]
+}

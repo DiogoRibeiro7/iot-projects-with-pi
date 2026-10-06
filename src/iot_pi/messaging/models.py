@@ -14,6 +14,7 @@ class TelemetryMessage:
     event: str
     timestamp: datetime
     data: dict[str, Any]
+    schema_version: str = "1.0"
 
     def to_json(self) -> str:
         """Serialize the message using an explicit stable schema."""
@@ -32,6 +33,7 @@ class TelemetryMessage:
         event = raw.get("event")
         timestamp = raw.get("timestamp")
         data = raw.get("data")
+        schema_version = raw.get("schema_version", "1.0")
 
         if not isinstance(device_id, str) or not device_id.strip():
             raise ValueError("device_id must be a non-empty string")
@@ -41,6 +43,8 @@ class TelemetryMessage:
             raise ValueError("timestamp must be an ISO-8601 string")
         if not isinstance(data, dict):
             raise ValueError("data must be a JSON object")
+        if schema_version != "1.0":
+            raise ValueError("unsupported telemetry schema_version")
 
         parsed = datetime.fromisoformat(timestamp)
         if parsed.tzinfo is None:
@@ -51,6 +55,7 @@ class TelemetryMessage:
             event=event,
             timestamp=parsed,
             data=data,
+            schema_version=schema_version,
         )
 
 
