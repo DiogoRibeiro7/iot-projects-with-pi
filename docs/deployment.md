@@ -33,6 +33,15 @@ For home automation:
 poetry install -E dht -E hardware
 ```
 
+For smart agriculture:
+
+```bash
+poetry install -E hardware
+```
+
+Add `-E dht` when climate context is enabled and `-E mqtt` when MQTT or
+durable telemetry is enabled.
+
 The committed `poetry.lock` keeps the installed dependency set reproducible.
 
 ## Configuration
@@ -59,6 +68,18 @@ sudo chmod 0640 /etc/iot-projects-with-pi/home.env
 Edit `home.env` for the DHT sensor, motion input, relay pin, thresholds, and
 evaluation interval.
 
+For smart agriculture, install the typed TOML configuration:
+
+```bash
+sudo cp deployment/config/agriculture.toml.example \
+  /etc/iot-projects-with-pi/agriculture.toml
+sudo chown root:iot /etc/iot-projects-with-pi/agriculture.toml
+sudo chmod 0640 /etc/iot-projects-with-pi/agriculture.toml
+```
+
+Edit the file for MCP3008 calibration, relay pin, database paths, safety timing,
+health state, and optional durable MQTT telemetry.
+
 ## systemd
 
 Install the weather service:
@@ -77,6 +98,14 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now iot-home.service
 ```
 
+Install the smart-agriculture service:
+
+```bash
+sudo cp deployment/systemd/iot-agriculture.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now iot-agriculture.service
+```
+
 Inspect the weather service:
 
 ```bash
@@ -91,17 +120,41 @@ systemctl status iot-home.service
 journalctl -u iot-home.service -f
 ```
 
+Inspect smart agriculture:
+
+```bash
+systemctl status iot-agriculture.service
+journalctl -u iot-agriculture.service -f
+```
+
 The units run as the dedicated `iot` account and use `NoNewPrivileges`.
 The weather unit limits filesystem writes to the application data directory.
 The home unit runs its controller continuously at the configured interval and
 uses `SIGINT` on shutdown so the CLI cleanup path explicitly de-energizes the
 relay before exiting.
 
-### GPIO permissions
+The agriculture unit reads its TOML configuration from
+`/etc/iot-projects-with-pi/agriculture.toml`, limits writes to
+`/var/lib/iot-projects-with-pi`, and uses `SIGINT` so the irrigation
+controller runs its cleanup path and de-energizes the relay before exit.
 
-Do not run the application as root merely to access GPIO. Add the service user
-to the appropriate Raspberry Pi device group for the operating system and
-hardware stack in use, then verify the minimum required permissions.
+### GPIO and SPI permissions
+
+Do not run the application as root merely to access GPIO or SPI. The agriculture
+unit requests the `gpio` and `spi` supplementary groups. On Raspberry Pi OS,
+verify those groups exist and enable SPI before starting the service:
+
+```bash
+sudo raspi-config nonint do_spi 0
+getent group gpio
+getent group spi
+```
+
+If the target distribution uses different device groups, adapt
+`SupplementaryGroups=` to the minimum groups required by that platform.
+
+Verify the service account can access the relevant GPIO/SPI devices without
+granting broad root privileges.
 
 ## Container deployment
 
@@ -150,18 +203,37 @@ access is the primary requirement.
 
 ## Updating a deployed Pi
 
-A safe update flow for a device running both reference services is:
+A safe update flow for a device running all three reference services is:
 
 ```bash
-sudo systemctl stop iot-weather.service iot-home.service
+sudo systemctl stop \
+  iot-weather.service \
+  iot-home.service \
+  iot-agriculture.service
 cd /opt/iot-projects-with-pi
 git pull --ff-only
-poetry install -E dht -E hardware
-sudo systemctl start iot-weather.service iot-home.service
+poetry install -E dht -E hardware -E mqtt
+sudo systemctl start \
+  iot-weather.service \
+  iot-home.service \
+  iot-agriculture.service
 ```
 
 If only one reference service is deployed, stop, update dependencies for, and
 restart only that service.
+
+For agriculture-only deployments:
+
+```bash
+sudo systemctl stop iot-agriculture.service
+cd /opt/iot-projects-with-pi
+git pull --ff-only
+poetry install -E hardware
+sudo systemctl start iot-agriculture.service
+```
+
+Include `-E dht` and/or `-E mqtt` when those optional agriculture features
+are enabled.
 
 Validate `poetry.lock` before deployment if `pyproject.toml` changed:
 
