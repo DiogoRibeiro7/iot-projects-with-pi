@@ -274,7 +274,6 @@ def test_controller_forces_off_and_records_event_on_downstream_error(
         controller.close()
 
 
-
 class RecordingDurableRuntime:
     """Capture agriculture telemetry without introducing network failure."""
 
