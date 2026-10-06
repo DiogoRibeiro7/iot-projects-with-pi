@@ -43,9 +43,7 @@ def read_wheel_metadata(path: Path) -> tuple[str, str]:
     """Read package metadata from a wheel archive."""
     with zipfile.ZipFile(path) as archive:
         candidates = [
-            name
-            for name in archive.namelist()
-            if name.endswith(".dist-info/METADATA")
+            name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
         ]
         if len(candidates) != 1:
             raise ValueError(
