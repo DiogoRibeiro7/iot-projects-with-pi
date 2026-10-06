@@ -15,6 +15,7 @@ from iot_pi.agriculture.service import IrrigationController
 from iot_pi.agriculture.storage import SQLiteAgricultureStore
 from iot_pi.hardware.fake import FakeDigitalOutput
 from iot_pi.messaging.fake import InMemoryPublisher
+from iot_pi.messaging.models import TelemetryMessage
 from iot_pi.observability.health import HealthTracker
 from iot_pi.observability.storage import SQLiteEventRepository
 from iot_pi.weather.sensors import SimulatedTemperatureHumiditySensor
@@ -271,3 +272,56 @@ def test_controller_forces_off_and_records_event_on_downstream_error(
         assert publisher.messages
     finally:
         controller.close()
+
+
+
+class RecordingDurableRuntime:
+    """Capture agriculture telemetry without introducing network failure."""
+
+    def __init__(self) -> None:
+        self.messages: list[TelemetryMessage] = []
+
+    def enqueue(self, message: TelemetryMessage) -> int:
+        """Record one durable telemetry envelope."""
+        self.messages.append(message)
+        return 0
+
+
+def test_controller_emits_typed_durable_telemetry(tmp_path: Path) -> None:
+    """Agriculture observations should use the durable runtime when configured."""
+    runtime = RecordingDurableRuntime()
+    controller = IrrigationController(
+        SequenceSoilMoistureSensor([24.0]),
+        FakeDigitalOutput(),
+        SQLiteAgricultureStore(tmp_path / "agriculture.db"),
+        policy=IrrigationPolicy(),
+        telemetry_runtime=runtime,  # type: ignore[arg-type]
+        device_id="farm-01",
+        clock=lambda: datetime(2026, 10, 6, 12, 0, tzinfo=UTC),
+    )
+
+    controller.open()
+    try:
+        result = controller.evaluate_once()
+    finally:
+        controller.close()
+
+    assert result.pump_on is True
+    assert runtime.messages[0].device_id == "farm-01"
+    assert runtime.messages[0].event == "irrigation_observation"
+    assert runtime.messages[0].data["pump_on"] is True
+
+
+def test_controller_rejects_direct_and_durable_telemetry_together(
+    tmp_path: Path,
+) -> None:
+    """Only one telemetry delivery mode should be active."""
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        IrrigationController(
+            SequenceSoilMoistureSensor([24.0]),
+            FakeDigitalOutput(),
+            SQLiteAgricultureStore(tmp_path / "agriculture.db"),
+            policy=IrrigationPolicy(),
+            telemetry_publisher=InMemoryPublisher(),
+            telemetry_runtime=RecordingDurableRuntime(),  # type: ignore[arg-type]
+        )
