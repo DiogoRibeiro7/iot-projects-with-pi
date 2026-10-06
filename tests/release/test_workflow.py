@@ -9,7 +9,7 @@ def test_release_workflow_contains_required_guards() -> None:
     """The release workflow should preserve the publication safety contract."""
     content = WORKFLOW.read_text(encoding="utf-8")
 
-    assert 'tags:' in content
+    assert "tags:" in content
     assert '"v*.*.*"' in content
     assert "fetch-depth: 0" in content
     assert "git merge-base --is-ancestor" in content
