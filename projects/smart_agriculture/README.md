@@ -269,14 +269,24 @@ person.
 
 - physical MCP3008 calibration is installation-specific;
 - durable offline MQTT/cloud spooling is available through the repository cloud
-  outbox, but is not wired into this CLI by default;
+  outbox and can be enabled through shared runtime configuration;
 - the safety guard limits continuous runtime but does not replace electrical
   over-current, dry-run, or flow protection;
 - rainfall forecasts and evapotranspiration models are outside the current scope.
 
 ## Deployment
 
-Use the general Raspberry Pi guidance in
-[../../docs/deployment.md](../../docs/deployment.md). For long-running
-deployments, choose an evaluation interval appropriate to soil dynamics and the
-pump hardware rather than high-frequency polling.
+The repository includes
+[`deployment/systemd/iot-agriculture.service`](../../deployment/systemd/iot-agriculture.service)
+and a typed
+[`agriculture.toml.example`](../../deployment/config/agriculture.toml.example).
+
+The native service runs as the non-root `iot` user with `gpio` and `spi`
+supplementary groups, writes mutable state only under
+`/var/lib/iot-projects-with-pi`, and uses `SIGINT` for safe relay shutdown.
+
+See [../../docs/deployment.md](../../docs/deployment.md) for installation,
+permissions, configuration, service inspection, and update commands.
+
+For long-running deployments, choose an evaluation interval appropriate to soil
+dynamics and the pump hardware rather than high-frequency polling.
