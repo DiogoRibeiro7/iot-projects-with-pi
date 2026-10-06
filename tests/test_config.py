@@ -152,3 +152,30 @@ def test_with_overrides_ignores_none_values() -> None:
 
     assert updated.samples == 3
     assert updated.model == original.model
+
+
+
+def test_weather_outbox_requires_mqtt_host() -> None:
+    """Durable telemetry cannot be enabled without a delivery endpoint."""
+    with pytest.raises(ValueError, match="mqtt_host"):
+        WeatherConfig(telemetry_outbox_database="data/outbox.db")
+
+
+@pytest.mark.parametrize(
+    ("batch_size", "max_retries", "backoff_seconds"),
+    [(0, 3, 1.0), (10, 0, 1.0), (10, 3, 0.0)],
+)
+def test_agriculture_rejects_invalid_telemetry_retry_settings(
+    batch_size: int,
+    max_retries: int,
+    backoff_seconds: float,
+) -> None:
+    """Durable telemetry retry controls must remain strictly positive."""
+    with pytest.raises(ValueError):
+        AgricultureConfig(
+            mqtt_host="127.0.0.1",
+            telemetry_outbox_database="data/outbox.db",
+            telemetry_batch_size=batch_size,
+            telemetry_max_retries=max_retries,
+            telemetry_backoff_seconds=backoff_seconds,
+        )
