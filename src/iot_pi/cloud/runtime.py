@@ -67,3 +67,43 @@ class DurableTelemetryRuntime:
         """Expose durable backlog size through runtime health."""
         if self._health is not None:
             self._health.set_backlog_size(self._bridge.pending_count)
+
+
+
+def build_mqtt_durable_runtime(
+    *,
+    host: str,
+    port: int,
+    device_id: str,
+    outbox_path: "Path",
+    batch_size: int,
+    max_retries: int,
+    backoff_seconds: float,
+    tls_enabled: bool,
+    topic_prefix: str,
+    health: HealthTracker | None = None,
+) -> DurableTelemetryRuntime:
+    """Build a durable MQTT telemetry runtime from deployment settings."""
+    from pathlib import Path
+
+    from iot_pi.cloud.mqtt import MqttCloudTelemetrySink
+    from iot_pi.cloud.outbox import SQLiteTelemetryOutbox
+
+    if not isinstance(outbox_path, Path):
+        raise TypeError("outbox_path must be a pathlib.Path")
+
+    sink = MqttCloudTelemetrySink(
+        host,
+        port=port,
+        client_id=device_id,
+        topic_prefix=topic_prefix,
+        tls_enabled=tls_enabled,
+    )
+    bridge = CloudTelemetryBridge(
+        sink,
+        batch_size=batch_size,
+        max_retries=max_retries,
+        backoff_seconds=backoff_seconds,
+        outbox=SQLiteTelemetryOutbox(outbox_path),
+    )
+    return DurableTelemetryRuntime(bridge, health=health)
