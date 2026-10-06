@@ -45,8 +45,10 @@ jobs:
         run: mkdir -p security-evidence
 
       - name: Generate reproducible CycloneDX SBOM
+        shell: bash
         run: |
-          cyclonedx-py poetry .             --all-extras             --output-reproducible             --output-format JSON             --output-file security-evidence/sbom.cdx.json
+          python_executable="$(poetry env info --executable)"
+          cyclonedx-py environment             --pyproject pyproject.toml             --output-reproducible             --output-format JSON             --output-file security-evidence/sbom.cdx.json             "$python_executable"
 
       - name: Capture installed dependency set
         shell: bash
