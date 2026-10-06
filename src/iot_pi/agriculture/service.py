@@ -12,6 +12,7 @@ from iot_pi.agriculture.models import AgricultureObservation
 from iot_pi.agriculture.rules import IrrigationPolicy, IrrigationState
 from iot_pi.agriculture.safety import IrrigationSafetyGuard
 from iot_pi.agriculture.storage import SQLiteAgricultureStore
+from iot_pi.cloud.runtime import DurableTelemetryRuntime
 from iot_pi.hardware.errors import HardwareError
 from iot_pi.hardware.interfaces import (
     AnalogSensor,
@@ -46,6 +47,7 @@ class IrrigationController:
         telemetry_publisher: MessagePublisher | None = None,
         device_id: str = "agriculture-pi",
         safety_guard: IrrigationSafetyGuard | None = None,
+        telemetry_runtime: DurableTelemetryRuntime | None = None,
     ) -> None:
         """Create an irrigation controller."""
         self._soil_sensor = soil_sensor
@@ -57,7 +59,13 @@ class IrrigationController:
         self._events = events
         self._logger = logger or logging.getLogger("iot_pi.agriculture")
         self._clock = clock or (lambda: datetime.now(UTC))
+        if telemetry_publisher is not None and telemetry_runtime is not None:
+            raise ValueError(
+                "telemetry_publisher and telemetry_runtime are mutually exclusive"
+            )
+
         self._telemetry_publisher = telemetry_publisher
+        self._telemetry_runtime = telemetry_runtime
         self._device_id = device_id
         self._safety_guard = safety_guard or IrrigationSafetyGuard()
 
@@ -171,8 +179,10 @@ class IrrigationController:
                     timestamp=observation.timestamp,
                 )
 
-            if self._telemetry_publisher is not None:
-                message = agriculture_telemetry(self._device_id, observation)
+            message = agriculture_telemetry(self._device_id, observation)
+            if self._telemetry_runtime is not None:
+                self._telemetry_runtime.enqueue(message)
+            elif self._telemetry_publisher is not None:
                 self._telemetry_publisher.publish(
                     telemetry_topic(self._device_id, "agriculture"),
                     message.to_json(),
