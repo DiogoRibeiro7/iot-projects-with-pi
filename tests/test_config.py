@@ -1,8 +1,17 @@
 """Tests for shared IoT application configuration."""
 
+from pathlib import Path
+
 import pytest
 
-from iot_pi.config import AppConfig
+from iot_pi.config import (
+    AgricultureConfig,
+    AppConfig,
+    HomeConfig,
+    WeatherConfig,
+    load_config,
+    with_overrides,
+)
 
 
 def test_app_config_accepts_valid_values() -> None:
@@ -25,16 +34,121 @@ def test_app_config_rejects_empty_device_id(device_id: str) -> None:
         AppConfig(device_id=device_id)
 
 
-@pytest.mark.parametrize("sample_interval_seconds", [0.0, -1.0])
-def test_app_config_rejects_non_positive_interval(
+@pytest.mark.parametrize(
+    "sample_interval_seconds",
+    [0.0, -1.0, float("nan"), float("inf")],
+)
+def test_app_config_rejects_invalid_interval(
     sample_interval_seconds: float,
 ) -> None:
-    """Sampling intervals must be strictly positive."""
-    with pytest.raises(
-        ValueError,
-        match="sample_interval_seconds must be greater than zero",
-    ):
+    """Sampling intervals must be positive finite values."""
+    with pytest.raises(ValueError, match="sample_interval_seconds"):
         AppConfig(
             device_id="pi-lab-01",
             sample_interval_seconds=sample_interval_seconds,
         )
+
+
+def test_weather_config_precedence(tmp_path: Path) -> None:
+    """CLI overrides env, env overrides TOML, and TOML overrides defaults."""
+    path = tmp_path / "weather.toml"
+    path.write_text(
+        (
+            'device_id = "toml-device"\n'
+            "sample_interval_seconds = 30.0\n"
+            "samples = 2\n"
+            'model = "DHT11"\n'
+        ),
+        encoding="utf-8",
+    )
+
+    config = load_config(
+        WeatherConfig,
+        path=path,
+        env_prefix="IOT_WEATHER_",
+        environ={
+            "IOT_WEATHER_DEVICE_ID": "env-device",
+            "IOT_WEATHER_SAMPLE_INTERVAL_SECONDS": "15",
+            "IOT_WEATHER_SIMULATION": "true",
+        },
+        cli_overrides={
+            "device_id": "cli-device",
+            "samples": 5,
+        },
+    )
+
+    assert config.device_id == "cli-device"
+    assert config.sample_interval_seconds == 15.0
+    assert config.simulation is True
+    assert config.samples == 5
+    assert config.model == "DHT11"
+
+
+def test_home_config_uses_defaults_without_sources() -> None:
+    """No file, env, or CLI values should preserve typed defaults."""
+    config = load_config(
+        HomeConfig,
+        env_prefix="IOT_HOME_",
+        environ={},
+    )
+
+    assert config.device_id == "home-pi"
+    assert config.sample_interval_seconds == 5.0
+    assert config.motion_pin == 17
+    assert config.override == "auto"
+
+
+def test_agriculture_environment_coercion() -> None:
+    """Environment values should coerce to bool, int, and float types."""
+    config = load_config(
+        AgricultureConfig,
+        env_prefix="IOT_AGRICULTURE_",
+        environ={
+            "IOT_AGRICULTURE_SIMULATION": "yes",
+            "IOT_AGRICULTURE_SAMPLES": "7",
+            "IOT_AGRICULTURE_DRY_ON_PERCENT": "25.5",
+            "IOT_AGRICULTURE_MQTT_PORT": "1884",
+        },
+    )
+
+    assert config.simulation is True
+    assert config.samples == 7
+    assert config.dry_on_percent == 25.5
+    assert config.mqtt_port == 1884
+
+
+def test_invalid_environment_boolean_fails() -> None:
+    """Invalid boolean strings should not be guessed."""
+    with pytest.raises(ValueError, match="invalid boolean"):
+        load_config(
+            WeatherConfig,
+            env_prefix="IOT_WEATHER_",
+            environ={"IOT_WEATHER_SIMULATION": "sometimes"},
+        )
+
+
+def test_unknown_toml_key_fails(tmp_path: Path) -> None:
+    """Configuration typos should fail instead of being silently ignored."""
+    path = tmp_path / "weather.toml"
+    path.write_text("unknown_key = 3\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unknown configuration keys"):
+        load_config(
+            WeatherConfig,
+            path=path,
+            env_prefix="IOT_WEATHER_",
+            environ={},
+        )
+
+
+def test_with_overrides_ignores_none_values() -> None:
+    """None should represent an unspecified CLI option."""
+    original = WeatherConfig()
+    updated = with_overrides(
+        original,
+        samples=3,
+        model=None,
+    )
+
+    assert updated.samples == 3
+    assert updated.model == original.model
