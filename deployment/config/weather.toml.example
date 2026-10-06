@@ -6,3 +6,13 @@ samples = 1000000
 pin = "D4"
 model = "DHT22"
 health_file = "/var/lib/iot-projects-with-pi/weather-health.json"
+
+# Optional restart-safe MQTT telemetry.
+# mqtt_host = "127.0.0.1"
+# mqtt_port = 1883
+# telemetry_outbox_database = "/var/lib/iot-projects-with-pi/weather-outbox.db"
+# telemetry_batch_size = 10
+# telemetry_max_retries = 3
+# telemetry_backoff_seconds = 1.0
+# telemetry_tls_enabled = false
+# telemetry_topic_prefix = "iot"
