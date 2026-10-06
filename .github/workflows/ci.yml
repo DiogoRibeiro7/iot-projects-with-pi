@@ -39,7 +39,7 @@ jobs:
         run: poetry run ruff check .
 
       - name: Ruff formatting
-        run: poetry run ruff format --diff src/iot_pi/release.py
+        run: poetry run ruff format --check .
 
       - name: mypy
         run: poetry run mypy src
