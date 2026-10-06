@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import os
 import tomllib
+from collections.abc import Mapping
 from dataclasses import dataclass, fields, replace
 from math import isfinite
 from pathlib import Path
-from typing import Any, Mapping, TypeVar, cast
+from typing import Any, cast
 
-TConfig = TypeVar("TConfig")
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,7 +148,7 @@ class AgricultureConfig:
             raise ValueError("mqtt_port must be between 1 and 65535")
 
 
-def load_config(
+def load_config[TConfig](
     config_type: type[TConfig],
     *,
     path: Path | None = None,
@@ -193,7 +193,7 @@ def _load_toml(path: Path | None) -> dict[str, Any]:
     return dict(data)
 
 
-def _load_environment(
+def _load_environment[TConfig](
     config_type: type[TConfig],
     prefix: str,
     environ: Mapping[str, str],
@@ -229,7 +229,7 @@ def _coerce_environment_value(raw: str, current: Any) -> Any:
     return raw
 
 
-def with_overrides(config: TConfig, **values: Any) -> TConfig:
+def with_overrides[TConfig](config: TConfig, **values: Any) -> TConfig:
     """Return a validated configuration with non-None overrides applied."""
     filtered = {key: value for key, value in values.items() if value is not None}
     return cast(TConfig, replace(cast(Any, config), **filtered))
