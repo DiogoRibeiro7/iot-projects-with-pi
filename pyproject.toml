@@ -68,6 +68,7 @@ source = ["iot_pi"]
 omit = [
     "src/iot_pi/*/cli.py",
     "src/iot_pi/messaging/mqtt.py",
+    "src/iot_pi/release.py",
 ]
 
 [tool.coverage.report]
