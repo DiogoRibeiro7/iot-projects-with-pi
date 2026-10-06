@@ -173,7 +173,6 @@ class AgricultureConfig:
         )
 
 
-
 def _validate_telemetry_settings(
     *,
     mqtt_host: str | None,
