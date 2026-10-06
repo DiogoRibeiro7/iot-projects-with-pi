@@ -7,7 +7,9 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from math import isfinite
 
+from iot_pi.cloud.runtime import DurableTelemetryRuntime
 from iot_pi.hardware.interfaces import TemperatureHumiditySensor
+from iot_pi.messaging.weather import weather_telemetry
 from iot_pi.observability.health import HealthTracker
 from iot_pi.observability.storage import SQLiteEventRepository
 from iot_pi.weather.models import WeatherObservation
@@ -31,6 +33,8 @@ class WeatherStation:
         logger: logging.Logger | None = None,
         health: HealthTracker | None = None,
         events: SQLiteEventRepository | None = None,
+        telemetry_runtime: DurableTelemetryRuntime | None = None,
+        device_id: str = "weather-pi",
     ) -> None:
         """Create a weather-station service."""
         if not isfinite(sample_interval_seconds) or sample_interval_seconds <= 0:
@@ -47,6 +51,8 @@ class WeatherStation:
         self._logger = logger or logging.getLogger("iot_pi.weather")
         self._health = health
         self._events = events
+        self._telemetry_runtime = telemetry_runtime
+        self._device_id = device_id
 
     def open(self) -> None:
         """Initialize sensor and storage resources safely."""
@@ -102,6 +108,11 @@ class WeatherStation:
                 "weather_observation",
                 event_payload,
                 timestamp=observation.timestamp,
+            )
+
+        if self._telemetry_runtime is not None:
+            self._telemetry_runtime.enqueue(
+                weather_telemetry(self._device_id, observation)
             )
 
         self._logger.info(
