@@ -27,9 +27,7 @@ class AppConfig:
             not isfinite(self.sample_interval_seconds)
             or self.sample_interval_seconds <= 0
         ):
-            raise ValueError(
-                "sample_interval_seconds must be a positive finite number"
-            )
+            raise ValueError("sample_interval_seconds must be a positive finite number")
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,9 +87,7 @@ class HomeConfig:
         if self.dht_model not in {"DHT11", "DHT22"}:
             raise ValueError("dht_model must be DHT11 or DHT22")
         if self.temperature_off_c >= self.temperature_on_c:
-            raise ValueError(
-                "temperature_off_c must be lower than temperature_on_c"
-            )
+            raise ValueError("temperature_off_c must be lower than temperature_on_c")
         if self.override not in {"auto", "on", "off"}:
             raise ValueError("override must be auto, on, or off")
 
@@ -165,9 +161,7 @@ def load_config[TConfig](
     environment = environ if environ is not None else os.environ
     env_values = _load_environment(config_type, env_prefix, environment)
     overrides = {
-        key: value
-        for key, value in (cli_overrides or {}).items()
-        if value is not None
+        key: value for key, value in (cli_overrides or {}).items() if value is not None
     }
 
     merged = {**defaults, **file_values, **env_values, **overrides}
