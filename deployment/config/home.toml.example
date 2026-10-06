@@ -1,0 +1,12 @@
+device_id = "home-pi-01"
+simulation = false
+sample_interval_seconds = 5.0
+motion_pin = 17
+relay_pin = 27
+dht_pin = "D4"
+dht_model = "DHT22"
+temperature_on_c = 28.0
+temperature_off_c = 26.0
+override = "auto"
+continuous = true
+health_file = "/var/lib/iot-projects-with-pi/home-health.json"

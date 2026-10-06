@@ -49,6 +49,7 @@ nav:
       - Cloud telemetry: cloud-telemetry.md
       - Durable telemetry outbox: telemetry-outbox.md
   - Operations:
+      - Runtime configuration: configuration.md
       - Observability and health: observability.md
       - Irrigation safety: irrigation-safety.md
       - Raspberry Pi Zero 2 W: pi-zero-2w.md
