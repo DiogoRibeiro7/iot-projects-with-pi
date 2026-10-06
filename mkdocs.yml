@@ -55,3 +55,4 @@ nav:
       - Raspberry Pi Zero 2 W: pi-zero-2w.md
       - Deployment: deployment.md
       - Continuous integration: ci.md
+      - Releases: releases.md
