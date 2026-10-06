@@ -1,10 +1,10 @@
 """Command-line interface for the weather station."""
 
 import logging
-from argparse import ArgumentParser, ArgumentTypeError
-from math import isfinite
+from argparse import ArgumentParser, BooleanOptionalAction
 from pathlib import Path
 
+from iot_pi.config import WeatherConfig, load_config
 from iot_pi.observability.health import HealthTracker
 from iot_pi.observability.state import HealthStateFile
 from iot_pi.weather.sensors import (
@@ -15,62 +15,67 @@ from iot_pi.weather.service import WeatherStation
 from iot_pi.weather.storage import SQLiteWeatherStore
 
 
-def _positive_finite_float(value: str) -> float:
-    """Parse a strictly positive finite floating-point value."""
-    parsed = float(value)
-    if not isfinite(parsed) or parsed <= 0:
-        raise ArgumentTypeError("value must be a positive finite number")
-    return parsed
-
-
-def _positive_int(value: str) -> int:
-    """Parse a strictly positive integer."""
-    parsed = int(value)
-    if parsed <= 0:
-        raise ArgumentTypeError("value must be a positive integer")
-    return parsed
-
-
 def build_parser() -> ArgumentParser:
     """Build the weather-station command-line parser."""
     parser = ArgumentParser(description="Run the Raspberry Pi weather station")
-    parser.add_argument("--database", type=Path, default=Path("data/weather.db"))
-    parser.add_argument("--interval", type=_positive_finite_float, default=60.0)
-    parser.add_argument("--samples", type=_positive_int, default=1)
-    parser.add_argument("--simulation", action="store_true")
-    parser.add_argument("--pin", default="D4")
-    parser.add_argument("--model", choices=("DHT11", "DHT22"), default="DHT22")
-    parser.add_argument("--health-file", type=Path)
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--device-id")
+    parser.add_argument("--database")
+    parser.add_argument("--interval", type=float)
+    parser.add_argument("--samples", type=int)
+    parser.add_argument(
+        "--simulation",
+        action=BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument("--pin")
+    parser.add_argument("--model", choices=("DHT11", "DHT22"))
+    parser.add_argument("--health-file")
     return parser
 
 
 def main() -> int:
     """Run the weather-station CLI."""
     args = build_parser().parse_args()
+    config = load_config(
+        WeatherConfig,
+        path=args.config,
+        env_prefix="IOT_WEATHER_",
+        cli_overrides={
+            "device_id": args.device_id,
+            "database": args.database,
+            "sample_interval_seconds": args.interval,
+            "samples": args.samples,
+            "simulation": args.simulation,
+            "pin": args.pin,
+            "model": args.model,
+            "health_file": args.health_file,
+        },
+    )
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     sensor = (
         SimulatedTemperatureHumiditySensor()
-        if args.simulation
-        else DhtTemperatureHumiditySensor(args.pin, model=args.model)
+        if config.simulation
+        else DhtTemperatureHumiditySensor(config.pin, model=config.model)
     )
-    store = SQLiteWeatherStore(args.database)
+    store = SQLiteWeatherStore(Path(config.database))
     health = (
         None
-        if args.health_file is None
-        else HealthTracker(observer=HealthStateFile(args.health_file))
+        if config.health_file is None
+        else HealthTracker(observer=HealthStateFile(Path(config.health_file)))
     )
     station = WeatherStation(
         sensor,
         store,
-        sample_interval_seconds=args.interval,
+        sample_interval_seconds=config.sample_interval_seconds,
         health=health,
     )
 
     try:
         station.open()
-        station.run(samples=args.samples)
+        station.run(samples=config.samples)
     finally:
         station.close()
 
