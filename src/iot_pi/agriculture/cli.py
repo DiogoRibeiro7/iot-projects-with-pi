@@ -5,8 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from argparse import ArgumentParser, ArgumentTypeError
-from math import isfinite
+from argparse import ArgumentParser, BooleanOptionalAction
 from pathlib import Path
 
 from iot_pi.agriculture.rules import IrrigationPolicy
@@ -18,6 +17,7 @@ from iot_pi.agriculture.sensors import (
 )
 from iot_pi.agriculture.service import IrrigationController
 from iot_pi.agriculture.storage import SQLiteAgricultureStore
+from iot_pi.config import AgricultureConfig, load_config
 from iot_pi.hardware.fake import FakeDigitalOutput
 from iot_pi.hardware.gpiozero import GpioZeroRelay
 from iot_pi.hardware.interfaces import AnalogSensor, Relay, TemperatureHumiditySensor
@@ -31,74 +31,39 @@ from iot_pi.weather.sensors import (
 )
 
 
-def _positive_int(value: str) -> int:
-    """Parse a strictly positive integer."""
-    parsed = int(value)
-    if parsed <= 0:
-        raise ArgumentTypeError("value must be a positive integer")
-    return parsed
-
-
-def _positive_finite_float(value: str) -> float:
-    """Parse a strictly positive finite float."""
-    parsed = float(value)
-    if not isfinite(parsed) or parsed <= 0:
-        raise ArgumentTypeError("value must be a positive finite number")
-    return parsed
-
-
-def _percentage(value: str) -> float:
-    """Parse a percentage in the closed interval [0, 100]."""
-    parsed = float(value)
-    if not isfinite(parsed) or not 0.0 <= parsed <= 100.0:
-        raise ArgumentTypeError("value must be between 0 and 100")
-    return parsed
-
-
-def _non_negative_finite_float(value: str) -> float:
-    """Parse a non-negative finite float."""
-    parsed = float(value)
-    if not isfinite(parsed) or parsed < 0:
-        raise ArgumentTypeError("value must be a non-negative finite number")
-    return parsed
-
-
 def build_parser() -> ArgumentParser:
     """Build the agriculture command-line parser."""
     parser = ArgumentParser(description="Run the Raspberry Pi irrigation controller")
-    parser.add_argument("--simulation", action="store_true")
-    parser.add_argument("--simulation-fixture", type=Path)
-    parser.add_argument("--samples", type=_positive_int, default=1)
-    parser.add_argument("--interval", type=_positive_finite_float, default=60.0)
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--device-id")
     parser.add_argument(
-        "--database",
-        type=Path,
-        default=Path("data/agriculture.db"),
+        "--simulation",
+        action=BooleanOptionalAction,
+        default=None,
     )
-    parser.add_argument("--events-database", type=Path)
-    parser.add_argument("--dry-on", type=_percentage, default=30.0)
-    parser.add_argument("--wet-off", type=_percentage, default=45.0)
+    parser.add_argument("--simulation-fixture")
+    parser.add_argument("--samples", type=int)
+    parser.add_argument("--interval", type=float)
+    parser.add_argument("--database")
+    parser.add_argument("--events-database")
+    parser.add_argument("--dry-on", type=float)
+    parser.add_argument("--wet-off", type=float)
+    parser.add_argument("--max-run-seconds", type=float)
+    parser.add_argument("--cooldown-seconds", type=float)
+    parser.add_argument("--relay-pin", type=int)
+    parser.add_argument("--adc-channel", type=int)
+    parser.add_argument("--dry-raw", type=float)
+    parser.add_argument("--wet-raw", type=float)
     parser.add_argument(
-        "--max-run-seconds",
-        type=_positive_finite_float,
-        default=300.0,
+        "--climate",
+        action=BooleanOptionalAction,
+        default=None,
     )
-    parser.add_argument(
-        "--cooldown-seconds",
-        type=_non_negative_finite_float,
-        default=60.0,
-    )
-    parser.add_argument("--relay-pin", type=int, default=27)
-    parser.add_argument("--adc-channel", type=int, default=0)
-    parser.add_argument("--dry-raw", type=float, default=0.8)
-    parser.add_argument("--wet-raw", type=float, default=0.3)
-    parser.add_argument("--climate", action="store_true")
-    parser.add_argument("--dht-pin", default="D4")
-    parser.add_argument("--dht-model", choices=("DHT11", "DHT22"), default="DHT22")
+    parser.add_argument("--dht-pin")
+    parser.add_argument("--dht-model", choices=("DHT11", "DHT22"))
     parser.add_argument("--mqtt-host")
-    parser.add_argument("--mqtt-port", type=int, default=1883)
-    parser.add_argument("--device-id", default="agriculture-pi")
-    parser.add_argument("--health-file", type=Path)
+    parser.add_argument("--mqtt-port", type=int)
+    parser.add_argument("--health-file")
     return parser
 
 
@@ -116,50 +81,84 @@ def _load_fixture(path: Path) -> list[float]:
 def main() -> int:
     """Run the smart-agriculture reference application."""
     args = build_parser().parse_args()
+    config = load_config(
+        AgricultureConfig,
+        path=args.config,
+        env_prefix="IOT_AGRICULTURE_",
+        cli_overrides={
+            "device_id": args.device_id,
+            "simulation": args.simulation,
+            "simulation_fixture": args.simulation_fixture,
+            "samples": args.samples,
+            "sample_interval_seconds": args.interval,
+            "database": args.database,
+            "events_database": args.events_database,
+            "dry_on_percent": args.dry_on,
+            "wet_off_percent": args.wet_off,
+            "max_run_seconds": args.max_run_seconds,
+            "cooldown_seconds": args.cooldown_seconds,
+            "relay_pin": args.relay_pin,
+            "adc_channel": args.adc_channel,
+            "dry_raw": args.dry_raw,
+            "wet_raw": args.wet_raw,
+            "climate": args.climate,
+            "dht_pin": args.dht_pin,
+            "dht_model": args.dht_model,
+            "mqtt_host": args.mqtt_host,
+            "mqtt_port": args.mqtt_port,
+            "health_file": args.health_file,
+        },
+    )
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     soil_sensor: AnalogSensor
-
-    if args.simulation:
+    if config.simulation:
         soil_sensor = (
-            SequenceSoilMoistureSensor(_load_fixture(args.simulation_fixture))
-            if args.simulation_fixture is not None
+            SequenceSoilMoistureSensor(
+                _load_fixture(Path(config.simulation_fixture))
+            )
+            if config.simulation_fixture is not None
             else SimulatedSoilMoistureSensor()
         )
         pump: Relay = FakeDigitalOutput()
     else:
         soil_sensor = Mcp3008SoilMoistureSensor(
-            args.adc_channel,
-            dry_raw=args.dry_raw,
-            wet_raw=args.wet_raw,
+            config.adc_channel,
+            dry_raw=config.dry_raw,
+            wet_raw=config.wet_raw,
         )
-        pump = GpioZeroRelay(args.relay_pin)
+        pump = GpioZeroRelay(config.relay_pin)
 
     climate_sensor: TemperatureHumiditySensor | None = None
-    if args.climate:
+    if config.climate:
         climate_sensor = (
             SimulatedTemperatureHumiditySensor()
-            if args.simulation
-            else DhtTemperatureHumiditySensor(args.dht_pin, model=args.dht_model)
+            if config.simulation
+            else DhtTemperatureHumiditySensor(
+                config.dht_pin,
+                model=config.dht_model,
+            )
         )
 
     telemetry_publisher: PahoMqttPublisher | None = None
-    if args.mqtt_host:
+    if config.mqtt_host:
         telemetry_publisher = PahoMqttPublisher(
-            args.mqtt_host,
-            port=args.mqtt_port,
-            client_id=args.device_id,
+            config.mqtt_host,
+            port=config.mqtt_port,
+            client_id=config.device_id,
         )
 
-    store = SQLiteAgricultureStore(args.database)
+    store = SQLiteAgricultureStore(Path(config.database))
     events = (
         None
-        if args.events_database is None
-        else SQLiteEventRepository(args.events_database)
+        if config.events_database is None
+        else SQLiteEventRepository(Path(config.events_database))
     )
     health = HealthTracker(
         observer=(
-            None if args.health_file is None else HealthStateFile(args.health_file)
+            None
+            if config.health_file is None
+            else HealthStateFile(Path(config.health_file))
         )
     )
 
@@ -168,20 +167,20 @@ def main() -> int:
         pump,
         store,
         policy=IrrigationPolicy(
-            dry_on_percent=args.dry_on,
-            wet_off_percent=args.wet_off,
+            dry_on_percent=config.dry_on_percent,
+            wet_off_percent=config.wet_off_percent,
         ),
         safety_guard=IrrigationSafetyGuard(
             IrrigationSafetyConfig(
-                max_run_seconds=args.max_run_seconds,
-                cooldown_seconds=args.cooldown_seconds,
+                max_run_seconds=config.max_run_seconds,
+                cooldown_seconds=config.cooldown_seconds,
             )
         ),
         climate_sensor=climate_sensor,
         health=health,
         events=events,
         telemetry_publisher=telemetry_publisher,
-        device_id=args.device_id,
+        device_id=config.device_id,
     )
 
     if telemetry_publisher is not None:
@@ -189,10 +188,10 @@ def main() -> int:
 
     try:
         controller.open()
-        for index in range(args.samples):
+        for index in range(config.samples):
             controller.evaluate_once()
-            if index < args.samples - 1:
-                time.sleep(args.interval)
+            if index < config.samples - 1:
+                time.sleep(config.sample_interval_seconds)
     finally:
         controller.close()
         if telemetry_publisher is not None:
