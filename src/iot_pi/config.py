@@ -193,11 +193,10 @@ def _validate_telemetry_settings(
     if max_retries <= 0:
         raise ValueError("telemetry_max_retries must be greater than zero")
     if not isfinite(backoff_seconds) or backoff_seconds <= 0:
-        raise ValueError(
-            "telemetry_backoff_seconds must be a positive finite number"
-        )
+        raise ValueError("telemetry_backoff_seconds must be a positive finite number")
     if not topic_prefix.strip("/"):
         raise ValueError("telemetry_topic_prefix must not be empty")
+
 
 def load_config[TConfig](
     config_type: type[TConfig],
