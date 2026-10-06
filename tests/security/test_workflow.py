@@ -18,7 +18,7 @@ def test_security_workflow_contains_required_evidence_controls() -> None:
     assert "pip-audit-exit-code.txt" in content
     assert 'if [ "$status" -eq 1 ]' in content
     assert "actions/upload-artifact@v4" in content
-    assert 'tags:' in content
+    assert "tags:" in content
     assert '"v*.*.*"' in content
 
 
