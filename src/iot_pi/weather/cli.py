@@ -87,10 +87,7 @@ def main() -> int:
     store = SQLiteWeatherStore(Path(config.database))
     health = (
         None
-        if (
-            config.health_file is None
-            and config.telemetry_outbox_database is None
-        )
+        if (config.health_file is None and config.telemetry_outbox_database is None)
         else HealthTracker(
             observer=(
                 None
