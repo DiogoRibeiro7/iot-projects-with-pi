@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any, cast
 
 
-
 @dataclass(frozen=True, slots=True)
 class AppConfig:
     """Common device/runtime configuration."""
