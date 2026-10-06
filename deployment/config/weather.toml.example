@@ -1,0 +1,8 @@
+device_id = "weather-pi-01"
+simulation = false
+sample_interval_seconds = 60.0
+database = "/var/lib/iot-projects-with-pi/weather.db"
+samples = 1000000
+pin = "D4"
+model = "DHT22"
+health_file = "/var/lib/iot-projects-with-pi/weather-health.json"
