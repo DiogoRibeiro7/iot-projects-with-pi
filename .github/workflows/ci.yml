@@ -39,7 +39,7 @@ jobs:
         run: poetry run ruff check .
 
       - name: Ruff formatting
-        run: poetry run ruff format --check .
+        run: poetry run ruff format --diff .
 
       - name: mypy
         run: poetry run mypy src
