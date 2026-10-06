@@ -154,7 +154,6 @@ def test_with_overrides_ignores_none_values() -> None:
     assert updated.model == original.model
 
 
-
 def test_weather_outbox_requires_mqtt_host() -> None:
     """Durable telemetry cannot be enabled without a delivery endpoint."""
     with pytest.raises(ValueError, match="mqtt_host"):
