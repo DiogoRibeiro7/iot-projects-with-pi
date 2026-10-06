@@ -114,9 +114,7 @@ def main() -> int:
     soil_sensor: AnalogSensor
     if config.simulation:
         soil_sensor = (
-            SequenceSoilMoistureSensor(
-                _load_fixture(Path(config.simulation_fixture))
-            )
+            SequenceSoilMoistureSensor(_load_fixture(Path(config.simulation_fixture)))
             if config.simulation_fixture is not None
             else SimulatedSoilMoistureSensor()
         )
