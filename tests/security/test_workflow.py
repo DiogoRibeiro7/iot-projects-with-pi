@@ -12,7 +12,7 @@ def test_security_workflow_contains_required_evidence_controls() -> None:
 
     assert "cyclonedx-py environment" in content
     assert "poetry env info --executable" in content
-    assert "--pyproject pyproject.toml" in content
+    assert "--pyproject" not in content
     assert "--output-reproducible" in content
     assert "security-evidence/sbom.cdx.json" in content
     assert "pip-audit" in content
