@@ -47,6 +47,7 @@ nav:
   - Messaging:
       - MQTT: mqtt.md
       - Cloud telemetry: cloud-telemetry.md
+      - Telemetry contracts: telemetry-contracts.md
       - Durable telemetry outbox: telemetry-outbox.md
   - Operations:
       - Runtime configuration: configuration.md
