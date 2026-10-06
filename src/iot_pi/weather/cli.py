@@ -8,7 +8,7 @@ from iot_pi.cloud.runtime import (
     DurableTelemetryRuntime,
     build_mqtt_durable_runtime,
 )
-from iot_pi.config import WeatherConfig, load_config
+from iot_pi.config import WeatherConfig, format_config, load_config
 from iot_pi.observability.health import HealthTracker
 from iot_pi.observability.state import HealthStateFile
 from iot_pi.weather.sensors import (
@@ -23,6 +23,11 @@ def build_parser() -> ArgumentParser:
     """Build the weather-station command-line parser."""
     parser = ArgumentParser(description="Run the Raspberry Pi weather station")
     parser.add_argument("--config", type=Path)
+    parser.add_argument(
+        "--check-config",
+        action="store_true",
+        help="validate and print the effective configuration without opening hardware",
+    )
     parser.add_argument("--device-id")
     parser.add_argument("--database")
     parser.add_argument("--interval", type=float)
@@ -76,6 +81,10 @@ def main() -> int:
             "telemetry_topic_prefix": args.telemetry_topic_prefix,
         },
     )
+
+    if args.check_config:
+        print(format_config(config))
+        return 0
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 

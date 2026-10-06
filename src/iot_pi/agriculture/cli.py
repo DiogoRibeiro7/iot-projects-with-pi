@@ -21,7 +21,7 @@ from iot_pi.cloud.runtime import (
     DurableTelemetryRuntime,
     build_mqtt_durable_runtime,
 )
-from iot_pi.config import AgricultureConfig, load_config
+from iot_pi.config import AgricultureConfig, format_config, load_config
 from iot_pi.hardware.fake import FakeDigitalOutput
 from iot_pi.hardware.gpiozero import GpioZeroRelay
 from iot_pi.hardware.interfaces import AnalogSensor, Relay, TemperatureHumiditySensor
@@ -39,6 +39,11 @@ def build_parser() -> ArgumentParser:
     """Build the agriculture command-line parser."""
     parser = ArgumentParser(description="Run the Raspberry Pi irrigation controller")
     parser.add_argument("--config", type=Path)
+    parser.add_argument(
+        "--check-config",
+        action="store_true",
+        help="validate and print the effective configuration without opening hardware",
+    )
     parser.add_argument("--device-id")
     parser.add_argument(
         "--simulation",
@@ -129,6 +134,10 @@ def main() -> int:
             "telemetry_topic_prefix": args.telemetry_topic_prefix,
         },
     )
+    if args.check_config:
+        print(format_config(config))
+        return 0
+
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     soil_sensor: AnalogSensor

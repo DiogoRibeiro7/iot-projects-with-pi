@@ -79,14 +79,34 @@ examples.
 Use environment variables or deployment-specific secret handling for sensitive
 values.
 
-## Validation
+## Validation and hardware-free inspection
 
 Configuration is converted into typed dataclasses before hardware is opened.
-Invalid device IDs, intervals, thresholds, ports, channel numbers, and enum-like
-values fail before the application service starts.
+Invalid device IDs, intervals, thresholds, ports, channel numbers, ADC
+calibration values, and enum-like values fail before the application service
+starts.
 
-Hardware-free normalized configuration inspection is tracked separately in the
-configuration validation workstream.
+All three reference CLIs support `--check-config`. The command resolves the
+full precedence chain, validates the resulting typed configuration, prints the
+normalized effective configuration as JSON, and exits before opening sensors,
+GPIO, SPI, SQLite databases, or MQTT connections.
+
+```bash
+poetry run iot-weather \
+  --config deployment/config/weather.toml.example \
+  --check-config
+
+poetry run iot-home \
+  --config deployment/config/home.toml.example \
+  --check-config
+
+poetry run iot-agriculture \
+  --config deployment/config/agriculture.toml.example \
+  --check-config
+```
+
+This is intended for deployment validation on laptops, CI runners, and
+Raspberry Pi hosts before services are started.
 
 
 ## Durable telemetry settings

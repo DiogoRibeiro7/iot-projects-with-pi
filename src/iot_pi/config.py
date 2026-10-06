@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import os
 import tomllib
 from collections.abc import Mapping
-from dataclasses import dataclass, fields, replace
+from dataclasses import asdict, dataclass, fields, replace
 from math import isfinite
 from pathlib import Path
 from typing import Any, cast
@@ -160,6 +161,10 @@ class AgricultureConfig:
             raise ValueError("cooldown_seconds must be a non-negative finite number")
         if self.adc_channel not in range(8):
             raise ValueError("adc_channel must be between 0 and 7")
+        if not 0.0 <= self.dry_raw <= 1.0 or not 0.0 <= self.wet_raw <= 1.0:
+            raise ValueError("dry_raw and wet_raw must be between 0 and 1")
+        if self.dry_raw == self.wet_raw:
+            raise ValueError("dry_raw and wet_raw must be different")
         if self.dht_model not in {"DHT11", "DHT22"}:
             raise ValueError("dht_model must be DHT11 or DHT22")
         _validate_telemetry_settings(
@@ -226,6 +231,11 @@ def load_config[TConfig](
         raise ValueError(f"unknown configuration keys: {', '.join(unknown)}")
 
     return config_type(**merged)
+
+
+def format_config(config: Any) -> str:
+    """Serialize a validated dataclass configuration as normalized JSON."""
+    return json.dumps(asdict(cast(Any, config)), indent=2, sort_keys=True)
 
 
 def _load_toml(path: Path | None) -> dict[str, Any]:
