@@ -172,7 +172,6 @@ def main() -> int:
         )
     )
 
-
     telemetry_runtime: DurableTelemetryRuntime | None = None
     telemetry_publisher: PahoMqttPublisher | None = None
     if config.telemetry_outbox_database is not None:
