@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://diogoribeiro7.github.io/iot-projects-with-pi/schemas/telemetry-envelope.schema.json",
+  "title": "Telemetry envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "device_id", "event", "timestamp", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "device_id": {"type": "string", "minLength": 1},
+    "event": {"type": "string", "minLength": 1},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "data": {"type": "object"}
+  }
+}
