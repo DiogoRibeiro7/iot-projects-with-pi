@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from iot_pi.hardware.interfaces import TemperatureHumidityReading
+from iot_pi.messaging.models import TelemetryMessage
 from iot_pi.weather.sensors import SimulatedTemperatureHumiditySensor
 from iot_pi.weather.service import WeatherStation
 from iot_pi.weather.storage import SQLiteWeatherStore
@@ -124,3 +125,40 @@ def test_weather_store_validates_lifecycle_and_empty_latest(tmp_path: Path) -> N
     finally:
         store.close()
         store.close()
+
+
+
+class RecordingTelemetryRuntime:
+    """Capture typed telemetry emitted by the weather service."""
+
+    def __init__(self) -> None:
+        self.messages: list[TelemetryMessage] = []
+
+    def enqueue(self, message: TelemetryMessage) -> int:
+        """Record one telemetry envelope."""
+        self.messages.append(message)
+        return 0
+
+
+def test_weather_station_emits_typed_durable_telemetry(tmp_path: Path) -> None:
+    """Weather observations should flow through the durable runtime hook."""
+    runtime = RecordingTelemetryRuntime()
+    station = WeatherStation(
+        SimulatedTemperatureHumiditySensor(seed=1),
+        SQLiteWeatherStore(tmp_path / "weather.db"),
+        sample_interval_seconds=1.0,
+        telemetry_runtime=runtime,  # type: ignore[arg-type]
+        device_id="weather-01",
+        clock=lambda: datetime(2026, 10, 6, 12, 0, tzinfo=UTC),
+    )
+
+    station.open()
+    try:
+        observation = station.sample_once()
+    finally:
+        station.close()
+
+    assert len(runtime.messages) == 1
+    assert runtime.messages[0].device_id == "weather-01"
+    assert runtime.messages[0].event == "weather_observation"
+    assert runtime.messages[0].data["temperature_c"] == observation.temperature_c
