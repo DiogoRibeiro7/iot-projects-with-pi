@@ -27,9 +27,11 @@ using CycloneDX JSON from the installed Poetry virtual environment after
 `poetry install --all-extras`. This inventories the concrete dependency set
 that CI actually executes.
 
-The SBOM generator receives the Poetry virtualenv's Python executable plus the
-PEP 621 `pyproject.toml` metadata. It uses reproducible-output mode and
-validates the generated CycloneDX document.
+The SBOM generator receives the Poetry virtualenv's Python executable and
+inventories the installed environment directly. The project itself is already
+installed into that environment by Poetry. This avoids relying on CycloneDX's
+separate project-metadata parser while still using reproducible-output mode and
+validated CycloneDX output.
 
 The security tooling version is pinned separately in
 `requirements-security.txt`; it is not part of the runtime Poetry dependency
