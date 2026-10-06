@@ -10,7 +10,9 @@ def test_security_workflow_contains_required_evidence_controls() -> None:
     """The workflow should preserve the intended evidence and policy contract."""
     content = WORKFLOW.read_text(encoding="utf-8")
 
-    assert "cyclonedx-py poetry ." in content
+    assert "cyclonedx-py environment" in content
+    assert "poetry env info --executable" in content
+    assert "--pyproject pyproject.toml" in content
     assert "--output-reproducible" in content
     assert "security-evidence/sbom.cdx.json" in content
     assert "pip-audit" in content
