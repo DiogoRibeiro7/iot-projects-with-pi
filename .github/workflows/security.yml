@@ -1,0 +1,83 @@
+name: Security Evidence
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evidence:
+    name: SBOM and dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python and Poetry
+        uses: DiogoRibeiro7/git-actions-collection/.github/actions/setup-poetry@v1.4.0
+        with:
+          python-version: "3.12"
+          install-deps: "false"
+
+      - name: Validate dependency lock
+        run: poetry check --lock
+
+      - name: Install application dependencies
+        run: poetry install --all-extras
+
+      - name: Install security tooling outside Poetry
+        run: python -m pip install --requirement requirements-security.txt
+
+      - name: Prepare security evidence directory
+        run: mkdir -p security-evidence
+
+      - name: Generate reproducible CycloneDX SBOM
+        run: |
+          cyclonedx-py poetry .             --all-extras             --output-reproducible             --output-format JSON             --output-file security-evidence/sbom.cdx.json
+
+      - name: Capture installed dependency set
+        shell: bash
+        run: |
+          poetry run python -m pip freeze --all --local --require-virtualenv             | grep -v '^-e '             > security-evidence/installed-requirements.txt
+
+      - name: Audit installed dependencies
+        id: audit
+        shell: bash
+        run: |
+          set +e
+          pip-audit             --requirement security-evidence/installed-requirements.txt             --format json             --output security-evidence/pip-audit.json
+          status=$?
+          set -e
+
+          printf '%s\n' "$status" > security-evidence/pip-audit-exit-code.txt
+
+          if [ "$status" -eq 1 ]; then
+            echo "::warning::pip-audit reported one or more known vulnerabilities; review the uploaded audit artifact."
+            exit 0
+          fi
+
+          if [ "$status" -ne 0 ]; then
+            echo "::error::pip-audit failed to execute successfully (exit code $status)."
+            exit "$status"
+          fi
+
+      - name: Upload security evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-evidence-${{ github.sha }}
+          path: security-evidence/
+          if-no-files-found: error
+          retention-days: 30
