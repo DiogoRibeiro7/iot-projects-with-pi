@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.validate_release import (
+from iot_pi.release import (
     normalize_distribution_name,
     read_project_metadata,
     validate_artifact_metadata,
