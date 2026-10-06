@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from iot_pi.cloud.bridge import CloudTelemetryBridge
 from iot_pi.cloud.errors import CloudDeliveryError
+from iot_pi.cloud.mqtt import MqttCloudTelemetrySink
+from iot_pi.cloud.outbox import SQLiteTelemetryOutbox
 from iot_pi.messaging.models import TelemetryMessage
 from iot_pi.observability.health import HealthTracker
 
@@ -69,13 +73,12 @@ class DurableTelemetryRuntime:
             self._health.set_backlog_size(self._bridge.pending_count)
 
 
-
 def build_mqtt_durable_runtime(
     *,
     host: str,
     port: int,
     device_id: str,
-    outbox_path: "Path",
+    outbox_path: Path,
     batch_size: int,
     max_retries: int,
     backoff_seconds: float,
@@ -84,14 +87,6 @@ def build_mqtt_durable_runtime(
     health: HealthTracker | None = None,
 ) -> DurableTelemetryRuntime:
     """Build a durable MQTT telemetry runtime from deployment settings."""
-    from pathlib import Path
-
-    from iot_pi.cloud.mqtt import MqttCloudTelemetrySink
-    from iot_pi.cloud.outbox import SQLiteTelemetryOutbox
-
-    if not isinstance(outbox_path, Path):
-        raise TypeError("outbox_path must be a pathlib.Path")
-
     sink = MqttCloudTelemetrySink(
         host,
         port=port,
