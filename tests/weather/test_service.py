@@ -127,7 +127,6 @@ def test_weather_store_validates_lifecycle_and_empty_latest(tmp_path: Path) -> N
         store.close()
 
 
-
 class RecordingTelemetryRuntime:
     """Capture typed telemetry emitted by the weather service."""
 
