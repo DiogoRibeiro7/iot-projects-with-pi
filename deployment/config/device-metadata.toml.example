@@ -1,0 +1,6 @@
+device_id = "weather-pi-01"
+hardware_class = "raspberry-pi-zero-2-w"
+environment = "production"
+site = "greenhouse-west"
+software_version = "0.1.0"
+deployed_at = 2026-10-06T21:00:00+00:00
