@@ -9,6 +9,7 @@ from iot_pi.config import (
     AppConfig,
     HomeConfig,
     WeatherConfig,
+    format_config,
     load_config,
     with_overrides,
 )
@@ -178,3 +179,25 @@ def test_agriculture_rejects_invalid_telemetry_retry_settings(
             telemetry_max_retries=max_retries,
             telemetry_backoff_seconds=backoff_seconds,
         )
+
+
+def test_format_config_returns_normalized_json() -> None:
+    """Validated configuration should serialize deterministically for inspection."""
+    rendered = format_config(WeatherConfig(device_id="weather-lab", samples=2))
+
+    assert '"device_id": "weather-lab"' in rendered
+    assert '"samples": 2' in rendered
+    assert rendered.index('"device_id"') < rendered.index('"samples"')
+
+
+@pytest.mark.parametrize(
+    ("dry_raw", "wet_raw"),
+    [(-0.1, 0.3), (0.8, 1.1), (0.5, 0.5)],
+)
+def test_agriculture_config_rejects_invalid_adc_calibration(
+    dry_raw: float,
+    wet_raw: float,
+) -> None:
+    """Calibration mistakes must fail before MCP3008 hardware is opened."""
+    with pytest.raises(ValueError, match="dry_raw|wet_raw"):
+        AgricultureConfig(dry_raw=dry_raw, wet_raw=wet_raw)
