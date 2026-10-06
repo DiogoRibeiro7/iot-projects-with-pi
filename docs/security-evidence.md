@@ -23,11 +23,13 @@ The workflow generates:
 security-evidence/sbom.cdx.json
 ```
 
-using CycloneDX JSON from the Poetry project and lockfile, including all
-application extras.
+using CycloneDX JSON from the installed Poetry virtual environment after
+`poetry install --all-extras`. This inventories the concrete dependency set
+that CI actually executes.
 
-The SBOM generation uses reproducible-output mode and validates the generated
-CycloneDX document.
+The SBOM generator receives the Poetry virtualenv's Python executable plus the
+PEP 621 `pyproject.toml` metadata. It uses reproducible-output mode and
+validates the generated CycloneDX document.
 
 The security tooling version is pinned separately in
 `requirements-security.txt`; it is not part of the runtime Poetry dependency
