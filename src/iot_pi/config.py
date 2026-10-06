@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import os
 import tomllib
-from dataclasses import asdict, dataclass, fields, replace
+from dataclasses import dataclass, fields, replace
 from math import isfinite
 from pathlib import Path
-from typing import Any, Mapping, TypeVar
+from typing import Any, Mapping, TypeVar, cast
 
 TConfig = TypeVar("TConfig")
 
@@ -157,7 +157,11 @@ def load_config(
     environ: Mapping[str, str] | None = None,
 ) -> TConfig:
     """Load defaults, TOML, environment, then explicit CLI overrides."""
-    defaults = asdict(config_type())  # type: ignore[call-arg]
+    default_instance: Any = config_type()
+    defaults = {
+        field.name: getattr(default_instance, field.name)
+        for field in fields(default_instance)
+    }
     file_values = _load_toml(path)
     environment = environ if environ is not None else os.environ
     env_values = _load_environment(config_type, env_prefix, environment)
@@ -168,12 +172,12 @@ def load_config(
     }
 
     merged = {**defaults, **file_values, **env_values, **overrides}
-    allowed = {field.name for field in fields(config_type)}
+    allowed = {field.name for field in fields(default_instance)}
     unknown = sorted(set(merged) - allowed)
     if unknown:
         raise ValueError(f"unknown configuration keys: {', '.join(unknown)}")
 
-    return config_type(**merged)  # type: ignore[arg-type]
+    return config_type(**merged)
 
 
 def _load_toml(path: Path | None) -> dict[str, Any]:
@@ -196,9 +200,9 @@ def _load_environment(
 ) -> dict[str, Any]:
     """Load prefixed environment values using dataclass field types."""
     values: dict[str, Any] = {}
-    defaults = config_type()  # type: ignore[call-arg]
+    defaults: Any = config_type()
 
-    for field in fields(config_type):
+    for field in fields(defaults):
         key = f"{prefix}{field.name}".upper()
         if key not in environ:
             continue
@@ -228,4 +232,4 @@ def _coerce_environment_value(raw: str, current: Any) -> Any:
 def with_overrides(config: TConfig, **values: Any) -> TConfig:
     """Return a validated configuration with non-None overrides applied."""
     filtered = {key: value for key, value in values.items() if value is not None}
-    return replace(config, **filtered)
+    return cast(TConfig, replace(cast(Any, config), **filtered))
