@@ -56,6 +56,7 @@ nav:
       - Irrigation safety: irrigation-safety.md
       - Raspberry Pi Zero 2 W: pi-zero-2w.md
       - Deployment: deployment.md
+      - SQLite maintenance: sqlite-maintenance.md
       - Continuous integration: ci.md
       - Releases: releases.md
       - Security evidence: security-evidence.md
