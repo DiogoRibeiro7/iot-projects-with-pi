@@ -56,3 +56,49 @@ deployment/fleet.toml.example
 
 It references the repository weather, home-automation, and agriculture
 configuration examples and demonstrates deployment labels.
+
+
+## Deployment planning
+
+A validated fleet manifest can be converted into a deterministic deployment plan
+without contacting devices or touching runtime services:
+
+```bash
+poetry run iot-deploy-plan deployment/fleet.toml.example
+```
+
+Each plan item contains:
+
+- device ID;
+- application;
+- expected systemd service name;
+- resolved configuration path;
+- fleet labels.
+
+Planning preserves manifest order.
+
+### Filtering
+
+Select explicit devices:
+
+```bash
+poetry run iot-deploy-plan deployment/fleet.toml.example \
+  --device-id weather-pi-01 \
+  --device-id greenhouse-01
+```
+
+Select by labels:
+
+```bash
+poetry run iot-deploy-plan deployment/fleet.toml.example \
+  --label site:greenhouse
+```
+
+When multiple `--label` values are supplied, a device must contain all of them.
+
+Explicit unknown device IDs are rejected instead of silently producing an empty
+selection.
+
+The planner performs the same manifest and typed configuration validation as
+`iot-fleet`, but it remains side-effect free: no GPIO, SPI, MQTT, SQLite,
+systemd, or remote connection is opened.
