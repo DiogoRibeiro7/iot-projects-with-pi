@@ -81,3 +81,73 @@ def test_integrity_check_rejects_non_database_file(tmp_path: Path) -> None:
 
     with pytest.raises((sqlite3.DatabaseError, ValueError)):
         check_integrity(path)
+
+
+def test_check_integrity_accepts_valid_database(tmp_path: Path) -> None:
+    """A healthy SQLite database should pass integrity validation."""
+    path = tmp_path / "healthy.db"
+    _create_database(path)
+
+    check_integrity(path)
+
+
+def test_backup_rejects_missing_source(tmp_path: Path) -> None:
+    """Backup should fail clearly when the source database does not exist."""
+    with pytest.raises(FileNotFoundError):
+        backup_database(tmp_path / "missing.db", tmp_path / "backup.db")
+
+
+def test_check_integrity_rejects_missing_file(tmp_path: Path) -> None:
+    """Integrity checks should fail clearly for missing database paths."""
+    with pytest.raises(FileNotFoundError):
+        check_integrity(tmp_path / "missing.db")
+
+
+def test_backup_removes_destination_when_post_check_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed post-backup verification must not leave an invalid backup."""
+    source = tmp_path / "source.db"
+    destination = tmp_path / "backup.db"
+    _create_database(source)
+
+    from iot_pi import sqlite_tools
+
+    monkeypatch.setattr(
+        sqlite_tools,
+        "check_integrity",
+        lambda path: (_ for _ in ()).throw(ValueError("forced failure")),
+    )
+
+    with pytest.raises(ValueError, match="forced failure"):
+        backup_database(source, destination)
+
+    assert not destination.exists()
+
+
+def test_restore_removes_destination_when_post_check_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed post-restore verification must not leave an invalid restore."""
+    backup = tmp_path / "backup.db"
+    destination = tmp_path / "restored.db"
+    _create_database(backup)
+
+    from iot_pi import sqlite_tools
+
+    calls = 0
+
+    def fail_second_check(path: Path) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise ValueError("forced failure")
+
+    monkeypatch.setattr(sqlite_tools, "check_integrity", fail_second_check)
+
+    with pytest.raises(ValueError, match="forced failure"):
+        restore_database(backup, destination)
+
+    assert not destination.exists()
