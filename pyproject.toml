@@ -30,6 +30,7 @@ iot-health = "iot_pi.observability.cli:main"
 iot-device = "iot_pi.device_cli:main"
 iot-sqlite = "iot_pi.sqlite_cli:main"
 iot-fleet = "iot_pi.fleet_cli:main"
+iot-deploy-plan = "iot_pi.deployment_plan_cli:main"
 
 [tool.poetry]
 packages = [{ include = "iot_pi", from = "src" }]
