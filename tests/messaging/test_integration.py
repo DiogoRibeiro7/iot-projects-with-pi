@@ -3,6 +3,8 @@
 import json
 from datetime import UTC, datetime
 
+import pytest
+
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
 from iot_pi.home.rules import AutomationPolicy
 from iot_pi.home.service import HomeAutomationController, OverrideMode
