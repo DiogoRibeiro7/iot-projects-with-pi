@@ -20,9 +20,7 @@ def check_integrity(path: Path) -> None:
 
     messages = [str(row[0]) for row in rows]
     if messages != ["ok"]:
-        raise ValueError(
-            "SQLite integrity check failed: " + "; ".join(messages)
-        )
+        raise ValueError("SQLite integrity check failed: " + "; ".join(messages))
 
 
 def backup_database(source: Path, destination: Path) -> None:
@@ -34,10 +32,7 @@ def backup_database(source: Path, destination: Path) -> None:
 
     destination.parent.mkdir(parents=True, exist_ok=True)
 
-    source_connection = sqlite3.connect(
-        f"file:{source}?mode=ro",
-        uri=True,
-    )
+    source_connection = sqlite3.connect(f"file:{source}?mode=ro", uri=True)
     destination_connection = sqlite3.connect(destination)
     try:
         source_connection.backup(destination_connection)
