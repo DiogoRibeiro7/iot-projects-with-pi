@@ -36,7 +36,7 @@ class RemoteCommand:
             raise ValueError("action must be one of: auto, on, off")
 
     @classmethod
-    def from_json(cls, payload: str) -> "RemoteCommand":
+    def from_json(cls, payload: str) -> RemoteCommand:
         """Parse and validate a JSON remote command."""
         raw = json.loads(payload)
         if not isinstance(raw, dict):
