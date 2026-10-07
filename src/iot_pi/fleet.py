@@ -32,9 +32,7 @@ class FleetDevice:
         if not self.device_id.strip():
             raise ValueError("fleet device_id must not be empty")
         if self.application not in {"weather", "home", "agriculture"}:
-            raise ValueError(
-                "application must be one of: weather, home, agriculture"
-            )
+            raise ValueError("application must be one of: weather, home, agriculture")
         if not self.config.strip():
             raise ValueError("fleet config path must not be empty")
         if any(not label.strip() for label in self.labels):
@@ -58,9 +56,7 @@ class FleetManifest:
             if device_ids.count(device_id) > 1
         )
         if duplicates:
-            raise ValueError(
-                "duplicate fleet device_id values: " + ", ".join(duplicates)
-            )
+            raise ValueError("duplicate fleet device_id values: " + ", ".join(duplicates))
 
     def to_json(self) -> str:
         """Serialize the normalized fleet inventory."""
@@ -79,9 +75,7 @@ def load_fleet_manifest(path: Path) -> FleetManifest:
     allowed_top_level = {"devices"}
     unknown_top_level = sorted(set(raw) - allowed_top_level)
     if unknown_top_level:
-        raise ValueError(
-            "unknown fleet manifest keys: " + ", ".join(unknown_top_level)
-        )
+        raise ValueError("unknown fleet manifest keys: " + ", ".join(unknown_top_level))
 
     raw_devices = raw.get("devices")
     if not isinstance(raw_devices, list):
@@ -96,16 +90,12 @@ def load_fleet_manifest(path: Path) -> FleetManifest:
 
         unknown = sorted(set(raw_device) - allowed_device_keys)
         if unknown:
-            raise ValueError(
-                f"unknown devices[{index}] keys: " + ", ".join(unknown)
-            )
+            raise ValueError(f"unknown devices[{index}] keys: " + ", ".join(unknown))
 
         required = {"device_id", "application", "config"}
         missing = sorted(required - set(raw_device))
         if missing:
-            raise ValueError(
-                f"missing devices[{index}] keys: " + ", ".join(missing)
-            )
+            raise ValueError(f"missing devices[{index}] keys: " + ", ".join(missing))
 
         labels = raw_device.get("labels", [])
         if not isinstance(labels, list) or not all(
@@ -143,9 +133,7 @@ def validate_fleet(path: Path) -> FleetManifest:
     for device in manifest.devices:
         config_path = (base_directory / device.config).resolve()
         if not config_path.is_file():
-            raise FileNotFoundError(
-                f"missing config for {device.device_id}: {config_path}"
-            )
+            raise FileNotFoundError(f"missing config for {device.device_id}: {config_path}")
 
         if device.application == "weather":
             config = load_config(
