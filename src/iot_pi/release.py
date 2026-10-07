@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import re
 import tarfile
 import zipfile
+from datetime import UTC, datetime
 from email.parser import Parser
 from pathlib import Path
 
@@ -133,6 +136,69 @@ def validate_release(
     )
 
     return wheels[0], sdists[0]
+
+
+def sha256_file(path: Path) -> str:
+    """Return the SHA-256 digest for one file."""
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def write_release_provenance(
+    *,
+    output_path: Path,
+    tag: str,
+    commit_sha: str,
+    workflow: str,
+    build_timestamp: datetime,
+    wheel: Path,
+    sdist: Path,
+    project_path: Path = Path("pyproject.toml"),
+) -> Path:
+    """Write machine-readable provenance for validated release artifacts."""
+    if build_timestamp.tzinfo is None:
+        raise ValueError("build_timestamp must include a timezone")
+    if not commit_sha.strip():
+        raise ValueError("commit_sha must not be empty")
+    if not workflow.strip():
+        raise ValueError("workflow must not be empty")
+
+    _, version = read_project_metadata(project_path)
+    expected_tag = f"v{version}"
+    if tag != expected_tag:
+        raise ValueError(f"tag {tag!r} does not match project version {expected_tag!r}")
+
+    payload = {
+        "version": version,
+        "tag": tag,
+        "commit_sha": commit_sha,
+        "build_timestamp": build_timestamp.astimezone(UTC).isoformat(),
+        "workflow": workflow,
+        "artifacts": {
+            wheel.name: {
+                "sha256": sha256_file(wheel),
+                "type": "wheel",
+            },
+            sdist.name: {
+                "sha256": sha256_file(sdist),
+                "type": "sdist",
+            },
+        },
+        "security_evidence": {
+            "workflow": "Security Evidence",
+            "artifact_name": f"security-evidence-{commit_sha}",
+        },
+    }
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return output_path
 
 
 def build_parser() -> argparse.ArgumentParser:
