@@ -6,7 +6,7 @@ import json
 import tomllib
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from iot_pi.config import (
     AgricultureConfig,
@@ -126,7 +126,7 @@ def load_fleet_manifest(path: Path) -> FleetManifest:
         devices.append(
             FleetDevice(
                 device_id=device_id,
-                application=application,
+                application=cast(ApplicationName, application),
                 config=config,
                 labels=tuple(labels),
             )
