@@ -145,3 +145,59 @@ def test_remote_command_rejects_invalid_payload(payload: str) -> None:
     """Malformed remote command envelopes must fail validation."""
     with pytest.raises(ValueError):
         RemoteCommand.from_json(payload)
+
+
+def test_replay_store_requires_open_connection(tmp_path: Path) -> None:
+    """Replay queries and writes should fail when the store is closed."""
+    store = SQLiteCommandReplayStore(tmp_path / "commands.db")
+
+    with pytest.raises(RuntimeError, match="not open"):
+        store.contains("cmd-001")
+
+    with pytest.raises(RuntimeError, match="not open"):
+        store.record(
+            "cmd-001",
+            processed_at=datetime(2026, 10, 7, 9, 1, tzinfo=UTC),
+        )
+
+
+def test_replay_store_rejects_naive_processed_timestamp(tmp_path: Path) -> None:
+    """Persisted replay timestamps must be timezone aware."""
+    store = SQLiteCommandReplayStore(tmp_path / "commands.db")
+    store.open()
+    try:
+        with pytest.raises(ValueError, match="timezone"):
+            store.record(
+                "cmd-001",
+                processed_at=datetime(2026, 10, 7, 9, 1),
+            )
+    finally:
+        store.close()
+
+
+def test_remote_command_requires_timezone_aware_dates() -> None:
+    """Command validity windows must be timezone aware."""
+    with pytest.raises(ValueError, match="timezone"):
+        RemoteCommand(
+            command_id="cmd-001",
+            device_id="home-pi-01",
+            issued_at=datetime(2026, 10, 7, 9, 0),
+            expires_at=datetime(2026, 10, 7, 9, 5),
+            action="off",
+        )
+
+
+def test_validate_remote_command_rejects_naive_now(tmp_path: Path) -> None:
+    """Validation reference time must include timezone information."""
+    store = SQLiteCommandReplayStore(tmp_path / "commands.db")
+    store.open()
+    try:
+        with pytest.raises(ValueError, match="timezone"):
+            validate_remote_command(
+                _command(),
+                device_id="home-pi-01",
+                replay_store=store,
+                now=datetime(2026, 10, 7, 9, 1),
+            )
+    finally:
+        store.close()
