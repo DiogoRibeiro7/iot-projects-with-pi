@@ -50,9 +50,7 @@ def _matches(
     """Return whether one device satisfies the requested filters."""
     if device_ids and device.device_id not in device_ids:
         return False
-    if labels and not labels.issubset(set(device.labels)):
-        return False
-    return True
+    return not labels or labels.issubset(set(device.labels))
 
 
 def build_deployment_plan(
