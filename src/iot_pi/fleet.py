@@ -138,31 +138,31 @@ def validate_fleet(path: Path) -> FleetManifest:
             raise FileNotFoundError(message)
 
         if device.application == "weather":
-            config = load_config(
+            config_device_id = load_config(
                 WeatherConfig,
                 path=config_path,
                 env_prefix="IOT_WEATHER_",
                 environ={},
-            )
+            ).device_id
         elif device.application == "home":
-            config = load_config(
+            config_device_id = load_config(
                 HomeConfig,
                 path=config_path,
                 env_prefix="IOT_HOME_",
                 environ={},
-            )
+            ).device_id
         else:
-            config = load_config(
+            config_device_id = load_config(
                 AgricultureConfig,
                 path=config_path,
                 env_prefix="IOT_AGRICULTURE_",
                 environ={},
-            )
+            ).device_id
 
-        if config.device_id != device.device_id:
+        if config_device_id != device.device_id:
             raise ValueError(
                 f"fleet device_id {device.device_id!r} does not match "
-                f"{device.application} config device_id {config.device_id!r}"
+                f"{device.application} config device_id {config_device_id!r}"
             )
 
     return manifest

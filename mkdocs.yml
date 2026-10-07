@@ -49,6 +49,7 @@ nav:
       - Cloud telemetry: cloud-telemetry.md
       - Telemetry contracts: telemetry-contracts.md
       - Durable telemetry outbox: telemetry-outbox.md
+      - Safe remote commands: remote-commands.md
   - Operations:
       - Runtime configuration: configuration.md
       - Device identity: device-identity.md

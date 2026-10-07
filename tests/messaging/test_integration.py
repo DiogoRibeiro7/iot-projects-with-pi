@@ -3,11 +3,17 @@
 import json
 from datetime import UTC, datetime
 
+import pytest
+
 from iot_pi.hardware.fake import FakeDigitalInput, FakeDigitalOutput
 from iot_pi.home.rules import AutomationPolicy
 from iot_pi.home.service import HomeAutomationController, OverrideMode
 from iot_pi.messaging.fake import InMemoryPublisher
-from iot_pi.messaging.home import apply_override_command
+from iot_pi.messaging.home import (
+    apply_override_command,
+    apply_safe_remote_override_command,
+)
+from iot_pi.messaging.remote_commands import SQLiteCommandReplayStore
 from iot_pi.messaging.weather import weather_message
 from iot_pi.weather.models import WeatherObservation
 from iot_pi.weather.sensors import SimulatedTemperatureHumiditySensor
@@ -45,3 +51,68 @@ def test_home_controller_accepts_typed_override_command() -> None:
 
     assert command.command == "off"
     assert controller._override is OverrideMode.FORCE_OFF
+
+
+def test_safe_remote_command_is_validated_before_override(
+    tmp_path,
+) -> None:
+    """Rejected remote commands must not mutate controller override state."""
+    controller = HomeAutomationController(
+        SimulatedTemperatureHumiditySensor(),
+        FakeDigitalInput(state=True),
+        FakeDigitalOutput(),
+        policy=AutomationPolicy(),
+    )
+    store = SQLiteCommandReplayStore(tmp_path / "commands.db")
+    store.open()
+    try:
+        payload = (
+            '{"command_id":"cmd-001","device_id":"other-pi",'
+            '"issued_at":"2026-10-07T09:00:00+00:00",'
+            '"expires_at":"2026-10-07T09:05:00+00:00","action":"off"}'
+        )
+
+        with pytest.raises(ValueError, match="another device"):
+            apply_safe_remote_override_command(
+                controller,
+                payload,
+                device_id="home-pi-01",
+                replay_store=store,
+                now=datetime(2026, 10, 7, 9, 1, tzinfo=UTC),
+            )
+
+        assert controller._override is OverrideMode.AUTO
+    finally:
+        store.close()
+
+
+def test_safe_remote_command_applies_after_acceptance(tmp_path) -> None:
+    """Accepted remote commands may reach controller logic after replay marking."""
+    controller = HomeAutomationController(
+        SimulatedTemperatureHumiditySensor(),
+        FakeDigitalInput(state=True),
+        FakeDigitalOutput(),
+        policy=AutomationPolicy(),
+    )
+    store = SQLiteCommandReplayStore(tmp_path / "commands.db")
+    store.open()
+    try:
+        payload = (
+            '{"command_id":"cmd-001","device_id":"home-pi-01",'
+            '"issued_at":"2026-10-07T09:00:00+00:00",'
+            '"expires_at":"2026-10-07T09:05:00+00:00","action":"off"}'
+        )
+
+        command = apply_safe_remote_override_command(
+            controller,
+            payload,
+            device_id="home-pi-01",
+            replay_store=store,
+            now=datetime(2026, 10, 7, 9, 1, tzinfo=UTC),
+        )
+
+        assert command.command_id == "cmd-001"
+        assert controller._override is OverrideMode.FORCE_OFF
+        assert store.contains("cmd-001")
+    finally:
+        store.close()
