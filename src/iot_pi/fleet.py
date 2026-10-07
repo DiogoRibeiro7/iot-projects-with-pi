@@ -56,7 +56,8 @@ class FleetManifest:
             if device_ids.count(device_id) > 1
         )
         if duplicates:
-            raise ValueError("duplicate fleet device_id values: " + ", ".join(duplicates))
+            message = "duplicate fleet device_id values: " + ", ".join(duplicates)
+            raise ValueError(message)
 
     def to_json(self) -> str:
         """Serialize the normalized fleet inventory."""
@@ -133,7 +134,8 @@ def validate_fleet(path: Path) -> FleetManifest:
     for device in manifest.devices:
         config_path = (base_directory / device.config).resolve()
         if not config_path.is_file():
-            raise FileNotFoundError(f"missing config for {device.device_id}: {config_path}")
+            message = f"missing config for {device.device_id}: {config_path}"
+            raise FileNotFoundError(message)
 
         if device.application == "weather":
             config = load_config(
