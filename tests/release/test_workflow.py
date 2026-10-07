@@ -20,6 +20,9 @@ def test_release_workflow_contains_required_guards() -> None:
     assert "poetry run pytest" in content
     assert "poetry build" in content
     assert "scripts/validate_release.py" in content
+    assert "scripts/generate_provenance.py" in content
+    assert "git rev-parse HEAD" in content
+    assert "dist/provenance.json" in content
     assert "gh release create" in content
     assert "--verify-tag" in content
     assert "--generate-notes" in content
