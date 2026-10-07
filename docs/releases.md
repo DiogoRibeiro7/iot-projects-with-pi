@@ -62,9 +62,27 @@ A successful release publishes:
 
 - one wheel;
 - one gzip-compressed source distribution;
+- `provenance.json`;
 - generated GitHub release notes.
 
 The artifacts are also uploaded as a workflow artifact for the release run.
+
+## Provenance
+
+`provenance.json` records the deployment-facing identity of the build:
+
+- project version and release tag;
+- the exact tagged commit SHA checked out by the workflow;
+- UTC build timestamp;
+- GitHub Actions workflow identity;
+- SHA-256 digest of the wheel;
+- SHA-256 digest of the source distribution;
+- the expected Security Evidence workflow artifact name for the same commit.
+
+The provenance file is generated after artifact validation and attached to the
+GitHub Release with the wheel and source distribution. Signing or cryptographic
+attestation is intentionally separate from this metadata layer and can be added
+later without changing the provenance document's basic role.
 
 ## Manual rerun
 
