@@ -70,8 +70,6 @@ def test_safe_remote_command_is_validated_before_override(
             '"expires_at":"2026-10-07T09:05:00+00:00","action":"off"}'
         )
 
-        import pytest
-
         with pytest.raises(ValueError, match="another device"):
             apply_safe_remote_override_command(
                 controller,
