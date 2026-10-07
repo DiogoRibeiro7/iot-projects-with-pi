@@ -93,6 +93,20 @@ jobs:
           RELEASE_TAG: ${{ steps.tag.outputs.tag }}
         run: poetry run python scripts/validate_release.py --tag "$RELEASE_TAG"
 
+      - name: Generate release provenance
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+        run: |
+          release_commit="$(git rev-parse HEAD)"
+          build_timestamp="$(date -u +'%Y-%m-%dT%H:%M:%S+00:00')"
+          poetry run python scripts/generate_provenance.py \
+            --tag "$RELEASE_TAG" \
+            --commit-sha "$release_commit" \
+            --workflow "$WORKFLOW_NAME" \
+            --build-timestamp "$build_timestamp"
+
       - name: Upload validated artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -100,6 +114,7 @@ jobs:
           path: |
             dist/*.whl
             dist/*.tar.gz
+            dist/provenance.json
           if-no-files-found: error
 
       - name: Create GitHub Release
@@ -107,4 +122,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          gh release create "$RELEASE_TAG"             --verify-tag             --generate-notes             --title "$RELEASE_TAG"             dist/*.whl             dist/*.tar.gz
+          gh release create "$RELEASE_TAG"             --verify-tag             --generate-notes             --title "$RELEASE_TAG"             dist/*.whl             dist/*.tar.gz             dist/provenance.json
