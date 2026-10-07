@@ -52,6 +52,7 @@ nav:
   - Operations:
       - Runtime configuration: configuration.md
       - Device identity: device-identity.md
+      - Fleet inventory: fleet.md
       - Observability and health: observability.md
       - Irrigation safety: irrigation-safety.md
       - Raspberry Pi Zero 2 W: pi-zero-2w.md
